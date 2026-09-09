@@ -33,81 +33,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - GestorFC</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #0f172a; } /* slate-900 */
-        .glass-panel {
-            background-color: #1e293b; /* slate-800 */
-            border: 1px solid #334155; /* slate-700 */
-        }
-    </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen text-slate-300">
+<body class="bg-slate-900 flex flex-col items-center justify-center min-h-screen text-slate-300 p-4 font-sans">
     
     <div class="mb-8 text-center">
         <h1 class="text-4xl font-extrabold text-white tracking-tight mb-2">Gestor<span class="text-emerald-500">FC</span></h1>
-        <p class="text-slate-400">Gestão Estratégica para Escolinhas de Futebol</p>
+        <p class="text-slate-400 text-sm tracking-wide">Gestão Estratégica para Escolinhas de Futebol</p>
     </div>
 
-    <div class="w-full max-w-md glass-panel p-8 rounded-xl shadow-2xl">
+    <div class="w-full max-w-md bg-slate-800/80 backdrop-blur-md border border-slate-700 p-8 rounded-2xl shadow-[0_0_40px_-10px_rgba(0,0,0,0.7)] shadow-emerald-500/5">
         <?php if ($error): ?>
-            <div class="bg-red-500/10 border border-red-500/50 text-red-500 px-4 py-3 rounded mb-6 text-sm flex items-center">
-                <i class="fas fa-exclamation-circle mr-2"></i> <?php echo htmlspecialchars($error); ?>
+            <div class="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm flex items-center shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <?php echo htmlspecialchars($error); ?>
             </div>
         <?php endif; ?>
         
         <form method="POST" action="login.php" class="space-y-6">
             <div>
-                <label for="email" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">E-mail de Acesso</label>
+                <label for="email" class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">E-mail de Acesso</label>
                 <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                        <i class="fas fa-at"></i>
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                        </svg>
                     </div>
-                    <input type="email" id="email" name="email" class="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-600 transition-colors" placeholder="seu.email@escolinha.com" required autofocus>
+                    <input type="email" id="email" name="email" class="w-full pl-11 pr-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-500 transition-all shadow-inner" placeholder="seu.email@escolinha.com" required autofocus>
                 </div>
             </div>
             
             <div>
                 <div class="flex justify-between items-center mb-2">
-                    <label for="password" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Senha</label>
-                    <span class="text-xs text-slate-500">Padrão teste: 123456</span>
+                    <label for="password" class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Senha</label>
                 </div>
                 <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
-                        <i class="fas fa-lock"></i>
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
                     </div>
-                    <input type="password" id="password" name="password" class="w-full pl-10 pr-10 py-3 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-600 transition-colors" placeholder="••••••••" required>
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-slate-500 hover:text-slate-300" onclick="togglePassword()">
-                        <i class="fas fa-eye" id="eye-icon"></i>
+                    <input type="password" id="password" name="password" class="w-full pl-11 pr-11 py-3 bg-slate-900/50 border border-slate-700 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-500 transition-all shadow-inner" placeholder="••••••••" required>
+                    <div class="absolute inset-y-0 right-0 pr-3.5 flex items-center cursor-pointer text-slate-500 hover:text-slate-300 transition-colors" onclick="togglePassword()">
+                        <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg id="eye-slash-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
                     </div>
                 </div>
+                <p class="text-[10px] text-slate-500 mt-2 text-right">Padrão teste: 123456</p>
             </div>
             
-            <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900">
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 tracking-wide">
                 Entrar no Sistema
             </button>
             
-            <div class="text-center mt-4">
-                <a href="#" class="text-sm text-emerald-500 hover:text-emerald-400 transition-colors">
-                    <i class="fas fa-star mr-1"></i> Não tem uma conta? Cadastre sua Escolinha &rarr;
+            <div class="text-center pt-2">
+                <a href="#" class="inline-flex items-center text-sm text-emerald-500 hover:text-emerald-400 font-medium transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    Não tem uma conta? Cadastre-se
                 </a>
             </div>
         </form>
 
-        <div class="mt-8 pt-6 border-t border-slate-700">
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center mb-4">Preenchimento Rápido (Perfis TCC)</p>
-            <div class="grid grid-cols-2 gap-3">
-                <button type="button" onclick="fillLogin('admin@teste.com', '123456')" class="bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs py-2 px-3 rounded flex items-center transition-colors">
-                    <i class="fas fa-crown text-amber-500 w-4"></i> Administrador
+        <div class="mt-8 pt-6 border-t border-slate-700/60">
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center mb-4">Acesso Rápido (Perfis TCC)</p>
+            <div class="grid grid-cols-2 gap-2.5">
+                <button type="button" onclick="fillLogin('admin@teste.com', '123456')" class="group flex items-center justify-center gap-2 bg-slate-900/50 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-300 text-xs py-2 px-3 rounded-lg transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    <span class="font-medium">Administrador</span>
                 </button>
-                <button type="button" onclick="fillLogin('secretaria@teste.com', '123456')" class="bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs py-2 px-3 rounded flex items-center transition-colors">
-                    <i class="fas fa-clipboard-list text-pink-400 w-4"></i> Secretaria
+                <button type="button" onclick="fillLogin('secretaria@teste.com', '123456')" class="group flex items-center justify-center gap-2 bg-slate-900/50 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-300 text-xs py-2 px-3 rounded-lg transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-pink-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
+                    <span class="font-medium">Secretaria</span>
                 </button>
-                <button type="button" onclick="fillLogin('professor@teste.com', '123456')" class="bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs py-2 px-3 rounded flex items-center transition-colors">
-                    <i class="fas fa-whistle text-blue-400 w-4"></i> Professor
+                <button type="button" onclick="fillLogin('professor@teste.com', '123456')" class="group flex items-center justify-center gap-2 bg-slate-900/50 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-300 text-xs py-2 px-3 rounded-lg transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span class="font-medium">Professor</span>
                 </button>
-                <button type="button" onclick="fillLogin('responsavel@teste.com', '123456')" class="bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs py-2 px-3 rounded flex items-center transition-colors">
-                    <i class="fas fa-users text-orange-400 w-4"></i> Responsável
+                <button type="button" onclick="fillLogin('responsavel@teste.com', '123456')" class="group flex items-center justify-center gap-2 bg-slate-900/50 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-300 text-xs py-2 px-3 rounded-lg transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-orange-400 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <span class="font-medium">Responsável</span>
                 </button>
             </div>
         </div>
@@ -116,15 +136,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
         function togglePassword() {
             const input = document.getElementById('password');
-            const icon = document.getElementById('eye-icon');
+            const eyeIcon = document.getElementById('eye-icon');
+            const eyeSlashIcon = document.getElementById('eye-slash-icon');
+            
             if (input.type === 'password') {
                 input.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
+                eyeIcon.classList.add('hidden');
+                eyeSlashIcon.classList.remove('hidden');
             } else {
                 input.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
+                eyeIcon.classList.remove('hidden');
+                eyeSlashIcon.classList.add('hidden');
             }
         }
 
