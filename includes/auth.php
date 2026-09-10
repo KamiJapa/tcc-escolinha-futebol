@@ -12,7 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
  */
 function checkLogin() {
     if (!isset($_SESSION['user_id'])) {
-        header("Location: /login.php");
+        header("Location: login.php");
         exit;
     }
 }
@@ -84,6 +84,6 @@ function logoutUser() {
         );
     }
     
-    header("Location: /login.php");
+    header("Location: login.php");
     exit;
 }

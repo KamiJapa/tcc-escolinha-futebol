@@ -83,7 +83,7 @@ $turmas_counts = json_encode(array_column($turmas_data, 'total'));
             <div class="px-6 mb-2">
                 <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Visão Geral</p>
             </div>
-            <a href="/index.php" class="sidebar-item active flex items-center px-6 py-3 mb-4 text-emerald-500 bg-emerald-500/10 border-l-4 border-emerald-500">
+            <a href="index.php" class="sidebar-item active flex items-center px-6 py-3 mb-4 text-emerald-500 bg-emerald-500/10 border-l-4 border-emerald-500">
                 <i class="fas fa-chart-pie w-6"></i>
                 <span class="font-medium text-sm">Dashboard Estratégico</span>
             </a>
@@ -128,7 +128,7 @@ $turmas_counts = json_encode(array_column($turmas_data, 'total'));
                     <p class="text-[10px] bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded uppercase inline-block font-bold mt-1"><?php echo htmlspecialchars($_SESSION['user_role'] ?? ''); ?></p>
                 </div>
             </div>
-            <a href="/logout.php" class="block w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm rounded transition-colors text-center border border-slate-700">
+            <a href="logout.php" class="block w-full py-2 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm rounded transition-colors text-center border border-slate-700">
                 <i class="fas fa-sign-out-alt mr-2 text-rose-500"></i> Encerrar Sessão
             </a>
         </div>
