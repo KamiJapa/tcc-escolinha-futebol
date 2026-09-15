@@ -27,8 +27,10 @@ function getDB() {
             
             $db = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
-            // In a production environment, you might want to log this error instead of displaying it.
-            die("Database connection failed: " . $e->getMessage());
+            // O detalhe fica no log; a tela não deve expor dados técnicos do banco.
+            error_log('Falha na conexão com o banco: ' . $e->getMessage());
+            http_response_code(500);
+            exit('Não foi possível conectar ao banco de dados. Verifique a configuração do ambiente.');
         }
     }
     
