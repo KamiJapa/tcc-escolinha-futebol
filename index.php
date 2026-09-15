@@ -32,7 +32,8 @@ $presenca_media = $presenca_media_raw ? round($presenca_media_raw, 1) : 0;
 $stmt = $db->prepare("
     SELECT t.NOME, COUNT(a.COD_ALUNO) as total
     FROM TB_TURMA t
-    LEFT JOIN TB_ALUNO a ON t.COD_TURMA = a.COD_TURMA AND a.STATUS = 'ATIVO'
+    LEFT JOIN TB_MATRICULA m ON t.COD_TURMA = m.COD_TURMA AND m.STATUS = 'ATIVA'
+    LEFT JOIN TB_ALUNO a ON m.COD_ALUNO = a.COD_ALUNO AND a.STATUS = 'ATIVO'
     WHERE t.COD_ESCOLINHA = ? AND t.ATIVA = 1
     GROUP BY t.COD_TURMA
 ");
