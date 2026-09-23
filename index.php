@@ -25,20 +25,26 @@ $frequencia = $frequencia === null ? 0 : round((float) $frequencia, 1);
 
 pageStart('Resumo da escolinha');
 ?>
-<section>
-    <h2>Alunos ativos</h2>
-    <p><?= $totalAlunos ?></p>
-</section>
-<section>
-    <h2>Turmas ativas</h2>
-    <p><?= $totalTurmas ?></p>
-</section>
-<section>
-    <h2>Frequência média</h2>
-    <p><?= e($frequencia) ?>%</p>
-</section>
-<section>
-    <h2>Sobre este resumo</h2>
-    <p>Os números são calculados a partir dos alunos, das turmas e das presenças cadastrados no sistema.</p>
+<p class="dashboard-intro mb-6 text-slate-600">Indicadores atualizados com os dados cadastrados na escolinha.</p>
+<div class="resumo-grid grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+    <section class="cartao-indicador rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <span class="icone-indicador alunos" aria-hidden="true">👥</span>
+        <h2>Alunos ativos</h2>
+        <p><?= $totalAlunos ?></p>
+    </section>
+    <section class="cartao-indicador rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <span class="icone-indicador turmas" aria-hidden="true">⚽</span>
+        <h2>Turmas ativas</h2>
+        <p><?= $totalTurmas ?></p>
+    </section>
+    <section class="cartao-indicador rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <span class="icone-indicador frequencia" aria-hidden="true">✓</span>
+        <h2>Frequência média</h2>
+        <p><?= e($frequencia) ?>%</p>
+    </section>
+</div>
+<section class="dashboard-nota mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-6">
+    <h2>Resumo da gestão</h2>
+    <p>Os indicadores ajudam a acompanhar alunos, turmas e frequência. Eles são calculados a partir dos registros do sistema.</p>
 </section>
 <?php pageEnd(); ?>

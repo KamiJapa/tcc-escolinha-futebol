@@ -1,63 +1,111 @@
-/* Estilos gerais do sistema */
+/* Ajustes próprios do sistema. As classes de layout também usam Tailwind. */
 * { box-sizing: border-box; }
-body { margin: 0; font-family: Arial, sans-serif; color: #243044; background: #f4f6f8; }
-a { color: #087f5b; }
+body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, Arial, sans-serif; color: #1e293b; }
+a { color: #047857; }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 
 /* Login e cadastro */
-.login-fundo { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; background: #10251e; color: #243044; }
-.login-cabecalho { text-align: center; color: white; margin-bottom: 20px; }
-.login-cabecalho h1 { margin: 0 0 8px; font-size: 32px; }
-.login-cabecalho p { margin: 0; color: #cbd5d1; }
-.login-caixa { width: 100%; max-width: 440px; padding: 28px; background: white; border-radius: 10px; box-shadow: 0 8px 24px #0003; }
+.login-fundo {
+    background: radial-gradient(ellipse at top left, #134e4a 0, #0f172a 46%, #020617 100%);
+}
+.login-cabecalho h1 { margin: 0 0 8px; color: #fff; }
+.login-cabecalho p { margin: 0; }
+.login-caixa {
+    color: #e2e8f0;
+    background: rgb(30 41 59 / 92%);
+    border: 1px solid rgb(148 163 184 / 20%);
+    box-shadow: 0 24px 70px rgb(0 0 0 / 40%), 0 0 35px rgb(16 185 129 / 8%);
+}
 .login-caixa form { display: grid; gap: 10px; }
-.login-caixa label { margin-top: 8px; font-weight: bold; }
-.login-caixa input { width: 100%; padding: 11px; border: 1px solid #aab5b0; border-radius: 5px; }
-.login-caixa input:focus { outline: 2px solid #0b8f65; border-color: #0b8f65; }
-.campo-senha { display: flex; gap: 8px; }
-.botao-olho { border: 1px solid #aab5b0; border-radius: 5px; padding: 0 12px; background: #f4f6f8; }
-.botao-principal { border: 0; border-radius: 5px; padding: 11px 16px; background: #087f5b; color: white; font-weight: bold; }
-.botao-principal:hover { background: #066849; }
-.login-caixa form .botao-principal { margin-top: 12px; }
-.login-cadastro-link { margin: 20px 0; text-align: center; }
-.login-testes { border-top: 1px solid #d7ddda; padding-top: 12px; font-size: 14px; }
-.login-testes h2 { font-size: 16px; }
-.login-testes ul { padding-left: 20px; line-height: 1.6; }
-.mensagem { padding: 12px; border-radius: 5px; }
-.mensagem.sucesso { color: #155b38; background: #e4f5eb; }
-.mensagem.erro, .mensagem-erro { color: #8b1e1e; background: #fde8e8; padding: 12px; border-radius: 5px; }
+.login-label { display: block; margin: 5px 0 0; color: #cbd5e1; font-size: .82rem; font-weight: 700; }
+.login-input {
+    width: 100%; min-width: 0; padding: 12px 13px; color: #f8fafc;
+    background: rgb(15 23 42 / 75%); border: 1px solid #475569; border-radius: 9px;
+    transition: border-color .18s, box-shadow .18s;
+}
+.login-input::placeholder { color: #64748b; }
+.login-input:focus { outline: none; border-color: #34d399; box-shadow: 0 0 0 3px rgb(52 211 153 / 18%); }
+.campo-senha { align-items: stretch; }
+.campo-senha .login-input { flex: 1; }
+.botao-olho { padding: 0 12px; color: #cbd5e1; background: #334155; border: 1px solid #475569; border-radius: 9px; }
+.botao-olho:hover { background: #475569; }
+.botao-principal {
+    border: 0; border-radius: 9px; padding: 11px 17px; color: #052e24;
+    background: linear-gradient(135deg, #fcd34d, #f59e0b); font-weight: 800;
+    box-shadow: 0 5px 15px rgb(245 158 11 / 22%); transition: transform .18s, filter .18s, box-shadow .18s;
+}
+.botao-principal:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 8px 20px rgb(245 158 11 / 28%); }
+.login-caixa form .botao-principal { margin-top: 10px; }
+.login-caixa form .botao-principal { color: #fff; background: linear-gradient(135deg, #059669, #047857); box-shadow: 0 5px 18px rgb(16 185 129 / 25%); }
+.login-caixa form .botao-principal:hover { background: linear-gradient(135deg, #10b981, #059669); }
+.login-testes { border-top: 1px solid rgb(148 163 184 / 20%); }
+.login-testes ul { padding-left: 20px; line-height: 1.7; }
+.login-cadastro-link a { text-decoration: none; }
+.login-cadastro-link a:hover { text-decoration: underline; }
+.mensagem { margin: 0 0 16px; padding: 12px 14px; border-radius: 9px; }
+.mensagem.sucesso { color: #a7f3d0; background: rgb(16 185 129 / 13%); border: 1px solid rgb(52 211 153 / 30%); }
+.mensagem.erro, .mensagem-erro { color: #fecaca; background: rgb(239 68 68 / 12%); border: 1px solid rgb(248 113 113 / 30%); padding: 12px 14px; border-radius: 9px; }
 
-/* Cabeçalho, menu e conteúdo após o login */
-.pagina-sistema { min-height: 100vh; }
-.cabecalho-sistema { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; color: white; background: #10251e; }
-.cabecalho-sistema p { margin: 0; }
-.marca { color: white; font-size: 22px; font-weight: bold; text-decoration: none; }
-.estrutura-sistema { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; max-width: 1280px; margin: auto; padding: 24px; }
-.menu-lateral { align-self: start; padding: 12px; border-radius: 8px; background: #10251e; }
-.menu-lateral nav { display: grid; gap: 4px; }
-.link-menu { display: block; padding: 10px; border-radius: 5px; color: white; text-decoration: none; }
-.link-menu:hover, .link-menu.ativo { background: #17634d; }
-.conteudo-sistema { min-width: 0; }
-.conteudo-sistema > h1 { margin: 0 0 20px; color: #143d30; font-size: 26px; }
-.conteudo-sistema section { margin-bottom: 20px; padding: 18px; border: 1px solid #d9dfdc; border-radius: 8px; background: white; }
-.conteudo-sistema section h2 { margin-top: 0; }
-.conteudo-sistema form { margin: 0; }
-.conteudo-sistema section > form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
-.conteudo-sistema form label { display: block; margin-bottom: 12px; font-weight: 600; }
-.conteudo-sistema form input:not([type="checkbox"]), .conteudo-sistema form select, .conteudo-sistema form textarea { display: block; width: 100%; margin-top: 5px; padding: 9px; border: 1px solid #aab5b0; border-radius: 4px; }
-.conteudo-sistema textarea { min-height: 90px; }
-.conteudo-sistema form button, .conteudo-sistema form a { margin: 4px 6px 4px 0; }
-.conteudo-sistema table { width: 100%; border-collapse: collapse; background: white; }
-.conteudo-sistema th, .conteudo-sistema td { padding: 10px; border: 1px solid #d9dfdc; text-align: left; }
-.conteudo-sistema th { color: white; background: #17634d; }
-.conteudo-sistema tr:nth-child(even) { background: #f4f6f8; }
+/* Cabeçalho, navegação e páginas internas */
+.pagina-sistema { min-height: 100vh; background: #f1f5f9; }
+.cabecalho-sistema { min-height: 72px; }
+.cabecalho-sistema p { margin: 0; color: #d1fae5; }
+.marca { color: white; text-decoration: none; }
+.estrutura-sistema { align-items: start; }
+.menu-lateral { position: sticky; top: 20px; border: 1px solid rgb(255 255 255 / 8%); }
+.link-menu { display: flex; align-items: center; gap: 10px; min-height: 42px; color: #e2e8f0; text-decoration: none; transition: background .16s, color .16s, transform .16s; }
+.link-menu:hover { color: #fde68a; transform: translateX(2px); }
+.link-menu.ativo { color: #fde68a; background: #065f46; }
+.conteudo-sistema { padding: 4px 0 28px; }
+.conteudo-sistema > h1 { letter-spacing: -.025em; }
+.conteudo-sistema section {
+    margin-bottom: 20px; padding: 22px; background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 14px; box-shadow: 0 3px 10px rgb(15 23 42 / 4%);
+}
+.conteudo-sistema section h2 { margin: 0 0 15px; color: #064e3b; font-size: 1.05rem; }
+.conteudo-sistema section p { line-height: 1.6; }
+.conteudo-sistema section > form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; }
+.conteudo-sistema form label { display: block; margin: 0 0 9px; color: #334155; font-size: .9rem; font-weight: 650; }
+.conteudo-sistema form input:not([type="checkbox"]), .conteudo-sistema form select, .conteudo-sistema form textarea {
+    display: block; width: 100%; margin-top: 6px; padding: 10px 12px; color: #1e293b;
+    background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; transition: border-color .18s, box-shadow .18s;
+}
+.conteudo-sistema form input:focus, .conteudo-sistema form select:focus, .conteudo-sistema form textarea:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgb(16 185 129 / 12%); }
+.conteudo-sistema textarea { min-height: 96px; resize: vertical; }
+.conteudo-sistema section > form > label:has(textarea), .conteudo-sistema section > form > label:has(select[name="cod_responsavel"]), .conteudo-sistema section > form > div { grid-column: 1 / -1; }
+.conteudo-sistema section > form > div { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.conteudo-sistema section > form > div a, .conteudo-sistema td a { color: #047857; font-weight: 650; }
+.conteudo-sistema table { width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; }
+.conteudo-sistema th, .conteudo-sistema td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+.conteudo-sistema th { color: #fff; background: #064e3b; font-size: .82rem; letter-spacing: .025em; }
+.conteudo-sistema th:first-child { border-radius: 8px 0 0; }
+.conteudo-sistema th:last-child { border-radius: 0 8px 0 0; }
+.conteudo-sistema tbody tr:hover { background: #f0fdf4; }
 .conteudo-sistema td form { display: inline; }
-.conteudo-sistema td button { border: 0; padding: 0; color: #a12626; background: transparent; text-decoration: underline; }
+.conteudo-sistema td button { border: 0; padding: 4px 7px; color: #be123c; background: transparent; font-weight: 650; }
+.conteudo-sistema td button:hover { color: #881337; text-decoration: underline; }
+.conteudo-sistema td form button { margin: 0; }
+
+/* Cartões do resumo */
+.resumo-grid { align-items: stretch; }
+.cartao-indicador { position: relative; overflow: hidden; min-height: 180px; }
+.cartao-indicador::after { position: absolute; right: -26px; bottom: -45px; width: 120px; height: 120px; content: ""; background: #ecfdf5; border-radius: 50%; }
+.cartao-indicador h2 { margin: 20px 0 5px !important; color: #64748b !important; font-size: .86rem !important; text-transform: uppercase; letter-spacing: .06em; }
+.cartao-indicador p { position: relative; z-index: 1; margin: 0; color: #0f172a; font-size: 2.5rem; font-weight: 800; letter-spacing: -.04em; }
+.icone-indicador { display: grid; width: 42px; height: 42px; place-items: center; color: #047857; background: #d1fae5; border-radius: 12px; font-size: 1.25rem; }
+.icone-indicador.turmas { color: #1d4ed8; background: #dbeafe; }
+.icone-indicador.frequencia { color: #a16207; background: #fef3c7; }
+.dashboard-nota { border-color: #a7f3d0 !important; background: linear-gradient(110deg, #ecfdf5, #f0fdfa) !important; }
+.dashboard-nota p { margin-bottom: 0; color: #475569; }
 
 @media (max-width: 760px) {
     .estrutura-sistema { grid-template-columns: 1fr; padding: 14px; }
+    .menu-lateral { position: static; }
     .menu-lateral nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .cabecalho-sistema { padding: 14px; }
     .conteudo-sistema { overflow-x: auto; }
+    .conteudo-sistema section > form { grid-template-columns: 1fr; }
+    .conteudo-sistema section > form > label:has(textarea), .conteudo-sistema section > form > label:has(select[name="cod_responsavel"]), .conteudo-sistema section > form > div { grid-column: auto; }
+    .conteudo-sistema th, .conteudo-sistema td { padding: 9px; }
 }
