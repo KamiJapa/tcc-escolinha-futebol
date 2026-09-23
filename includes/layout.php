@@ -39,6 +39,7 @@ function pageStart($title) {
         return;
     }
 
+    $classeAlunos = $title === 'Alunos' ? ' pagina-alunos' : '';
     ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -49,7 +50,7 @@ function pageStart($title) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="pagina-sistema min-h-screen bg-slate-50 text-slate-800">
+<body class="pagina-sistema<?= $classeAlunos ?> min-h-screen bg-slate-50 text-slate-800">
     <header class="cabecalho-sistema bg-emerald-950 text-white shadow-lg">
         <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4">
             <a class="marca text-xl font-extrabold tracking-tight" href="index.php">Gestor<span class="text-amber-400">FC</span></a>
@@ -62,7 +63,6 @@ function pageStart($title) {
             <nav class="grid gap-1" aria-label="Menu principal">
                 <?php menuItem('index.php', 'Início', '⌂', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL']); ?>
                 <?php menuItem('alunos.php', 'Alunos', '◉', ['ADMIN', 'SECRETARIA']); ?>
-                <?php menuItem('camisas.php', 'Camisas dos alunos', '⚽', ['ADMIN', 'SECRETARIA']); ?>
                 <?php menuItem('responsaveis.php', 'Responsáveis', '◌', ['ADMIN', 'SECRETARIA']); ?>
                 <?php menuItem('turmas.php', 'Turmas', '▦', ['ADMIN', 'SECRETARIA']); ?>
                 <?php menuItem('matriculas.php', 'Matrículas', '↔', ['ADMIN', 'SECRETARIA']); ?>

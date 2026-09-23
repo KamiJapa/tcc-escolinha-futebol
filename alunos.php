@@ -83,6 +83,7 @@ $lista = $lista->fetchAll();
 pageStart('Alunos');
 $value = function ($field, $default = '') use ($edit) { return e($edit[$field] ?? $default); };
 ?>
+<?php if (isset($_GET['mini'])): ?>
 <section>
     <h2><?= $edit ? 'Editar aluno' : 'Novo aluno' ?></h2>
     <?php if (!$responsaveis): ?><p>Cadastre um responsável antes de cadastrar um aluno.</p><?php else: ?>
@@ -98,8 +99,41 @@ $value = function ($field, $default = '') use ($edit) { return e($edit[$field] ?
         <label>Observações médicas<textarea name="observacoes_medicas"><?= $value('OBSERVACOES_MEDICAS') ?></textarea></label>
         <div><?php actionButton($edit ? 'Salvar alterações' : 'Cadastrar aluno'); ?><?php if ($edit): ?><a href="alunos.php">Cancelar</a><?php endif; ?></div>
     </form>
-    <p class="mt-3 text-sm text-slate-500">Os números das camisas são alterados na tela <a href="camisas.php<?= isset($_GET['mini']) ? '?mini=1' : '' ?>">Camisas dos alunos</a>, que evita atribuir o mesmo número a dois alunos.</p>
     <?php endif; ?>
 </section>
-<section><div><table><thead><tr><th>Aluno</th><th>Responsável</th><th>Situação</th><th>Turmas</th><th>Ações</th></tr></thead><tbody><?php foreach ($lista as $aluno): ?><tr><td><?= e($aluno['NOME']) ?></td><td><?= e($aluno['RESPONSAVEL']) ?></td><td><?= e($aluno['STATUS']) ?></td><td><?= (int) $aluno['TURMAS_ATIVAS'] ?></td><td><a href="alunos.php?editar=<?= (int) $aluno['COD_ALUNO'] ?>">Editar</a><form method="post" onsubmit="return confirm('Excluir este aluno? As matrículas e presenças relacionadas serão removidas.');"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $aluno['COD_ALUNO'] ?>"><button>Excluir</button></form></td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="5">Nenhum aluno cadastrado.</td></tr><?php endif; ?></tbody></table></div></section>
+<?php else: ?>
+<div class="alunos-acoes">
+    <div><h2>Alunos cadastrados</h2><p>Cadastre e gerencie os alunos da escolinha.</p></div>
+    <div class="alunos-botoes">
+        <button type="button" class="acao-rapida" data-url="alunos.php?mini=1" data-titulo="Novo aluno"><span>＋</span>Novo aluno</button>
+        <button type="button" class="acao-rapida" data-url="camisas.php?mini=1" data-titulo="Camisas dos alunos"><span>👕</span>Camisas</button>
+    </div>
+</div>
+<section class="lista-alunos"><div class="tabela-alunos"><table><thead><tr><th>Aluno</th><th>Responsável</th><th>Situação</th><th>Turmas</th><th>Ações</th></tr></thead><tbody><?php foreach ($lista as $aluno): ?><tr><td><?= e($aluno['NOME']) ?></td><td><?= e($aluno['RESPONSAVEL']) ?></td><td><?= e($aluno['STATUS']) ?></td><td><?= (int) $aluno['TURMAS_ATIVAS'] ?></td><td><button type="button" class="acao-tabela" data-url="alunos.php?mini=1&amp;editar=<?= (int) $aluno['COD_ALUNO'] ?>" data-titulo="Editar aluno">Editar</button><form method="post" onsubmit="return confirm('Excluir este aluno? As matrículas e presenças relacionadas serão removidas.');"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $aluno['COD_ALUNO'] ?>"><button>Excluir</button></form></td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="5">Nenhum aluno cadastrado.</td></tr><?php endif; ?></tbody></table></div></section>
+<dialog class="modal-cadastro" id="modalAlunos" aria-labelledby="tituloModalAlunos">
+    <header class="modal-cabecalho"><h2 id="tituloModalAlunos">Alunos</h2><button type="button" class="fechar-modal" id="fecharModalAlunos" aria-label="Fechar">×</button></header>
+    <iframe id="iframeAlunos" title="Cadastro de aluno ou gestão de camisas"></iframe>
+</dialog>
+<script>
+    const modalAlunos = document.getElementById('modalAlunos');
+    const iframeAlunos = document.getElementById('iframeAlunos');
+    const tituloModalAlunos = document.getElementById('tituloModalAlunos');
+
+    document.querySelectorAll('[data-url]').forEach(function (botao) {
+        botao.addEventListener('click', function () {
+            iframeAlunos.src = botao.dataset.url;
+            tituloModalAlunos.textContent = botao.dataset.titulo;
+            modalAlunos.showModal();
+        });
+    });
+
+    document.getElementById('fecharModalAlunos').addEventListener('click', function () {
+        modalAlunos.close();
+    });
+
+    modalAlunos.addEventListener('close', function () {
+        iframeAlunos.src = 'about:blank';
+    });
+</script>
+<?php endif; ?>
 <?php pageEnd(); ?>

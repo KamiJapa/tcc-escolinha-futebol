@@ -117,6 +117,27 @@ button { cursor: pointer; }
 .fechar-modal:hover { background: rgb(255 255 255 / 22%); }
 .modal-cadastro iframe { width: 100%; flex: 1; border: 0; background: #f8fafc; }
 
+/* A lista de alunos ocupa a tela; formulários e camisas abrem em janelas. */
+.pagina-alunos { height: 100vh; overflow: hidden; }
+.pagina-alunos .estrutura-sistema { height: calc(100vh - 72px); min-height: 0; overflow: hidden; padding-top: 14px; padding-bottom: 14px; }
+.pagina-alunos .menu-lateral { align-self: start; }
+.pagina-alunos .conteudo-sistema { display: flex; min-height: 0; flex-direction: column; overflow: hidden; padding: 4px 0 0; }
+.pagina-alunos .conteudo-sistema > h1 { flex: 0 0 auto; margin-bottom: 10px; }
+.alunos-acoes { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; padding: 14px 18px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; }
+.alunos-acoes h2 { margin: 0; color: #064e3b; font-size: 1.05rem; }
+.alunos-acoes p { margin: 3px 0 0; color: #64748b; font-size: .85rem; }
+.alunos-botoes { display: flex; gap: 10px; }
+.alunos-botoes .acao-rapida { min-height: 48px; padding: 7px 12px; }
+.alunos-botoes .acao-rapida span { width: 32px; height: 32px; flex-basis: 32px; }
+.pagina-alunos .lista-alunos { display: flex; min-height: 0; flex: 1; flex-direction: column; overflow: hidden; margin: 0; padding: 10px; }
+.tabela-alunos { min-height: 0; flex: 1; overflow: auto; }
+.tabela-alunos thead { position: sticky; top: 0; z-index: 1; }
+.acao-tabela { margin-right: 8px; padding: 5px 9px; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 7px; font-size: .82rem; font-weight: 700; }
+.acao-tabela:hover { background: #d1fae5; }
+.mini-pagina.camisas { height: 100%; overflow: hidden; }
+.mini-pagina.camisas .conteudo-sistema { display: flex; height: 100%; flex-direction: column; overflow: hidden; }
+.mini-pagina.camisas .conteudo-sistema > section:last-of-type { min-height: 0; flex: 1; overflow: auto; }
+
 /* A mesma página de cadastro aparece sem menu dentro do modal. */
 .mini-pagina { min-height: 100%; padding: 22px !important; background: #f8fafc !important; }
 .mini-pagina .conteudo-sistema { max-width: 850px; margin: 0 auto; padding: 0 0 18px; }
@@ -143,4 +164,10 @@ button { cursor: pointer; }
     .mini-pagina { padding: 14px !important; }
     .item-chamada { grid-template-columns: 1fr auto; }
     .item-chamada input:not([type="checkbox"]) { grid-column: 1 / -1; }
+    .pagina-alunos { height: auto; min-height: 100vh; overflow: auto; }
+    .pagina-alunos .estrutura-sistema { height: auto; min-height: calc(100vh - 72px); overflow: visible; }
+    .pagina-alunos .conteudo-sistema { overflow: visible; }
+    .pagina-alunos .lista-alunos { min-height: 300px; }
+    .alunos-acoes { align-items: stretch; flex-direction: column; }
+    .alunos-botoes { display: grid; grid-template-columns: 1fr 1fr; }
 }
