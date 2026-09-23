@@ -107,6 +107,8 @@ button { cursor: pointer; }
 .acoes-painel h2 { margin-bottom: 3px !important; }
 .acao-rapida { display: flex; min-height: 70px; align-items: center; gap: 12px; padding: 14px; color: #064e3b; background: linear-gradient(145deg, #fff, #f8fafc); border: 1px solid #dbe4e8; border-radius: 13px; font-weight: 700; text-align: left; box-shadow: 0 2px 6px rgb(15 23 42 / 4%); transition: transform .18s, box-shadow .18s, border-color .18s; }
 .acao-rapida:hover { transform: translateY(-2px); border-color: #6ee7b7; box-shadow: 0 8px 18px rgb(15 23 42 / 9%); }
+.acao-rapida:focus-visible, .acao-tabela:focus-visible, .fechar-modal:focus-visible, .botao-principal:focus-visible { outline: 3px solid #34d399; outline-offset: 3px; }
+.acao-rapida:active { transform: translateY(0); }
 .acao-rapida span { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; color: #047857; background: #d1fae5; border-radius: 12px; font-size: 1.2rem; }
 .modal-cadastro { width: min(940px, calc(100vw - 24px)); height: min(850px, calc(100vh - 24px)); max-width: none; max-height: none; padding: 0; overflow: hidden; color: #1e293b; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 18px; box-shadow: 0 25px 80px rgb(2 6 23 / 35%); }
 .modal-cadastro::backdrop { background: rgb(2 6 23 / 68%); backdrop-filter: blur(3px); }
@@ -134,6 +136,26 @@ button { cursor: pointer; }
 .tabela-alunos thead { position: sticky; top: 0; z-index: 1; }
 .acao-tabela { margin-right: 8px; padding: 5px 9px; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 7px; font-size: .82rem; font-weight: 700; }
 .acao-tabela:hover { background: #d1fae5; }
+.pagina-recursos { height: 100vh; overflow: hidden; }
+.pagina-recursos .estrutura-sistema { height: calc(100vh - 72px); min-height: 0; overflow: hidden; padding-top: 14px; padding-bottom: 14px; }
+.pagina-recursos .conteudo-sistema { display: flex; min-height: 0; flex-direction: column; overflow: hidden; padding: 4px 0 0; }
+.pagina-recursos .conteudo-sistema > h1 { flex: 0 0 auto; margin-bottom: 10px; }
+.barra-recursos { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; padding: 14px 18px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; }
+.barra-recursos h2 { margin: 0; color: #064e3b; font-size: 1.05rem; }
+.barra-recursos p { margin: 3px 0 0; color: #64748b; font-size: .85rem; }
+.botoes-recursos { display: flex; flex-wrap: wrap; gap: 10px; }
+.botoes-recursos .acao-rapida { min-height: 48px; padding: 7px 12px; }
+.botoes-recursos .acao-rapida span { width: 32px; height: 32px; flex-basis: 32px; }
+.pagina-recursos .conteudo-sistema > section:first-of-type { display: none; }
+.pagina-recursos .conteudo-sistema > section:nth-of-type(2) { display: block; min-height: 0; flex: 1; overflow: auto; margin: 0; padding: 10px; }
+.pagina-recursos .conteudo-sistema > section:nth-of-type(2) > div { min-height: 0; }
+.pagina-recursos .conteudo-sistema > section:nth-of-type(2) thead { position: sticky; top: 0; z-index: 1; }
+.pagina-recursos .conteudo-sistema > section:nth-of-type(2) > div:has(table) { max-height: 100%; overflow: auto; }
+.conteudo-sistema td button.acao-tabela { display: inline-flex; align-items: center; justify-content: center; margin: 0 7px 4px 0; padding: 6px 10px; color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; font-size: .82rem; font-weight: 700; }
+.conteudo-sistema td button.acao-tabela:hover { color: #065f46; background: #d1fae5; text-decoration: none; }
+.conteudo-sistema td form button:not(.acao-tabela) { margin: 0 0 4px; padding: 6px 10px; color: #be123c; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; font-size: .82rem; }
+.conteudo-sistema td form button:not(.acao-tabela):hover { color: #9f1239; background: #ffe4e6; text-decoration: none; }
+.mini-pagina .conteudo-sistema section > form textarea { min-height: 64px; }
 .mini-pagina.camisas { height: 100%; overflow: hidden; }
 .mini-pagina.camisas .conteudo-sistema { display: flex; height: 100%; flex-direction: column; overflow: hidden; }
 .mini-pagina.camisas .conteudo-sistema > section:last-of-type { min-height: 0; flex: 1; overflow: auto; }
@@ -170,4 +192,10 @@ button { cursor: pointer; }
     .pagina-alunos .lista-alunos { min-height: 300px; }
     .alunos-acoes { align-items: stretch; flex-direction: column; }
     .alunos-botoes { display: grid; grid-template-columns: 1fr 1fr; }
+    .pagina-recursos { height: auto; min-height: 100vh; overflow: auto; }
+    .pagina-recursos .estrutura-sistema { height: auto; min-height: calc(100vh - 72px); overflow: visible; }
+    .pagina-recursos .conteudo-sistema { overflow: visible; }
+    .pagina-recursos .conteudo-sistema > section:nth-of-type(2) { min-height: 300px; }
+    .barra-recursos { align-items: stretch; flex-direction: column; }
+    .botoes-recursos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

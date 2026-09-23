@@ -39,7 +39,32 @@ function pageStart($title) {
         return;
     }
 
-    $classeAlunos = $title === 'Alunos' ? ' pagina-alunos' : '';
+    $paginas = [
+        'Alunos' => 'pagina-alunos',
+        'Responsáveis' => 'pagina-recursos pagina-responsaveis',
+        'Turmas' => 'pagina-recursos pagina-turmas',
+        'Matrículas' => 'pagina-recursos pagina-matriculas',
+        'Aulas e chamada' => 'pagina-recursos pagina-aulas',
+        'Usuários' => 'pagina-recursos pagina-usuarios'
+    ];
+    $classePagina = isset($paginas[$title]) ? ' ' . $paginas[$title] : '';
+    $acoesRapidas = [
+        'Responsáveis' => [['Novo responsável', '♧', 'responsaveis.php?mini=1']],
+        'Turmas' => [['Nova turma', '⚽', 'turmas.php?mini=1']],
+        'Matrículas' => [['Nova matrícula', '↔', 'matriculas.php?mini=1']],
+        'Aulas e chamada' => [
+            ['Nova aula', '▣', 'aulas.php?mini=1'],
+            ['Fazer chamada', '✓', 'aulas.php?mini=1&chamadas=1']
+        ],
+        'Usuários' => [['Novo usuário', '☻', 'usuarios.php?mini=1']]
+    ];
+    $titulosRecursos = [
+        'Responsáveis' => 'Responsáveis cadastrados',
+        'Turmas' => 'Turmas cadastradas',
+        'Matrículas' => 'Matrículas registradas',
+        'Aulas e chamada' => 'Aulas registradas',
+        'Usuários' => 'Usuários cadastrados'
+    ];
     ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -50,7 +75,7 @@ function pageStart($title) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="pagina-sistema<?= $classeAlunos ?> min-h-screen bg-slate-50 text-slate-800">
+<body class="pagina-sistema<?= $classePagina ?> min-h-screen bg-slate-50 text-slate-800">
     <header class="cabecalho-sistema bg-emerald-950 text-white shadow-lg">
         <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4">
             <a class="marca text-xl font-extrabold tracking-tight" href="index.php">Gestor<span class="text-amber-400">FC</span></a>
@@ -76,6 +101,41 @@ function pageStart($title) {
         <main class="conteudo-sistema min-w-0">
             <h1 class="mb-6 text-2xl font-bold text-emerald-950"><?= e($title) ?></h1>
             <?php showFlash(); ?>
+            <?php if (isset($acoesRapidas[$title])): ?>
+                <div class="barra-recursos">
+                    <div><h2><?= e($titulosRecursos[$title]) ?></h2><p>Escolha uma ação para abrir o formulário em uma janela.</p></div>
+                    <div class="botoes-recursos">
+                        <?php foreach ($acoesRapidas[$title] as $acao): ?>
+                            <button type="button" class="acao-rapida" data-modal-url="<?= e($acao[2]) ?>" data-modal-titulo="<?= e($acao[0]) ?>"><span><?= e($acao[1]) ?></span><?= e($acao[0]) ?></button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <dialog class="modal-cadastro" id="modalRecurso" aria-labelledby="tituloModalRecurso">
+                    <header class="modal-cabecalho"><h2 id="tituloModalRecurso"><?= e($title) ?></h2><button type="button" class="fechar-modal" id="fecharModalRecurso" aria-label="Fechar">×</button></header>
+                    <iframe id="iframeRecurso" title="Formulário"></iframe>
+                </dialog>
+                <script>
+                    const modalRecurso = document.getElementById('modalRecurso');
+                    const iframeRecurso = document.getElementById('iframeRecurso');
+                    const tituloModalRecurso = document.getElementById('tituloModalRecurso');
+
+                    document.querySelectorAll('[data-modal-url]').forEach(function (botao) {
+                        botao.addEventListener('click', function () {
+                            iframeRecurso.src = botao.dataset.modalUrl;
+                            tituloModalRecurso.textContent = botao.dataset.modalTitulo;
+                            modalRecurso.showModal();
+                        });
+                    });
+
+                    document.getElementById('fecharModalRecurso').addEventListener('click', function () {
+                        modalRecurso.close();
+                    });
+
+                    modalRecurso.addEventListener('close', function () {
+                        iframeRecurso.src = 'about:blank';
+                    });
+                </script>
+            <?php endif; ?>
     <?php
 }
 
