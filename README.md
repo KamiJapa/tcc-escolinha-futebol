@@ -33,6 +33,16 @@ O link **Cadastre-se** cria uma conta de responsável. Depois de criar a conta, 
 
 `cadastro.php` verifica os campos obrigatórios e se as senhas coincidem. A senha é convertida em hash com `password_hash`; o sistema não guarda a senha original. Em seguida, uma transação grava a conta em `TB_USUARIO` e o perfil de responsável em `TB_RESPONSAVEL`. Se qualquer gravação falhar, a transação é desfeita para não deixar metade do cadastro no banco.
 
+## Painel, cadastros rápidos e camisas
+
+- No painel, os cartões mostram contagens calculadas no banco. Cada tipo de usuário vê apenas os dados permitidos para seu perfil.
+- Os botões **Ações rápidas** abrem uma janela com o formulário que já existe em cada tela. O `iframe` do JavaScript mostra essa página sem o menu lateral, e o PHP continua usando os mesmos formulários e validações.
+- `includes/layout.php` verifica `?mini=1` para desenhar a página compacta. `includes/helpers.php`, na função `go`, mantém esse parâmetro depois de salvar ou mostrar um erro.
+- Em `login.php`, os botões de teste chamam `usarConta(email)`. Essa função preenche os dois campos com a conta escolhida e a senha de demonstração.
+- Em `alunos.php`, antes de inserir ou alterar, a consulta `SELECT` verifica se o responsável já tem um aluno com o mesmo nome e a mesma data de nascimento. `TRIM` remove espaços nas pontas e `LOWER` ignora diferenças entre maiúsculas e minúsculas.
+- Para alterar camisas, use **Camisas dos alunos**. `camisas.php` lista o elenco, impede atribuir um número já ocupado e troca os números em uma transação. Assim, se uma das duas alterações falhar, o banco desfaz a troca inteira.
+- A chamada pode ser aberta a partir do botão do painel; depois de escolher uma aula, marque as presenças e salve. A gravação atualiza a presença existente ou insere uma nova para aquela aula e aluno.
+
 ## Para estudar o código
 
 - As classes como `flex`, `grid`, `p-4` e `bg-emerald-950` são classes do Tailwind e controlam somente a aparência do HTML. Por exemplo, `grid` organiza os elementos em colunas e `p-4` adiciona espaço interno.

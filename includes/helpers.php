@@ -36,6 +36,10 @@ function showFlash() {
 }
 
 function go($url) {
+    // Mantém o formulário dentro da mini tela depois de salvar ou mostrar um erro.
+    if (isset($_GET['mini']) && strpos($url, 'mini=') === false) {
+        $url .= (strpos($url, '?') === false ? '?' : '&') . 'mini=1';
+    }
     header('Location: ' . $url);
     exit;
 }

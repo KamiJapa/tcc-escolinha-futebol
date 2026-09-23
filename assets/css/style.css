@@ -41,6 +41,11 @@ button { cursor: pointer; }
 .login-caixa form .botao-principal:hover { background: linear-gradient(135deg, #10b981, #059669); }
 .login-testes { border-top: 1px solid rgb(148 163 184 / 20%); }
 .login-testes ul { padding-left: 20px; line-height: 1.7; }
+.login-testes .contas-teste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; padding: 0; list-style: none; }
+.login-testes .conta-teste { width: 100%; padding: 11px 12px; color: #e2e8f0; background: #263548; border: 1px solid #475569; border-radius: 10px; text-align: left; transition: background .18s, border-color .18s, transform .18s; }
+.login-testes .conta-teste:hover { background: #334155; border-color: #34d399; transform: translateY(-1px); }
+.login-testes .conta-teste strong, .login-testes .conta-teste span { display: block; }
+.login-testes .conta-teste span { margin-top: 3px; color: #a7f3d0; font-size: .76rem; }
 .login-cadastro-link a { text-decoration: none; }
 .login-cadastro-link a:hover { text-decoration: underline; }
 .mensagem { margin: 0 0 16px; padding: 12px 14px; border-radius: 9px; }
@@ -98,6 +103,32 @@ button { cursor: pointer; }
 .icone-indicador.frequencia { color: #a16207; background: #fef3c7; }
 .dashboard-nota { border-color: #a7f3d0 !important; background: linear-gradient(110deg, #ecfdf5, #f0fdfa) !important; }
 .dashboard-nota p { margin-bottom: 0; color: #475569; }
+.acoes-painel { border-radius: 18px; }
+.acoes-painel h2 { margin-bottom: 3px !important; }
+.acao-rapida { display: flex; min-height: 70px; align-items: center; gap: 12px; padding: 14px; color: #064e3b; background: linear-gradient(145deg, #fff, #f8fafc); border: 1px solid #dbe4e8; border-radius: 13px; font-weight: 700; text-align: left; box-shadow: 0 2px 6px rgb(15 23 42 / 4%); transition: transform .18s, box-shadow .18s, border-color .18s; }
+.acao-rapida:hover { transform: translateY(-2px); border-color: #6ee7b7; box-shadow: 0 8px 18px rgb(15 23 42 / 9%); }
+.acao-rapida span { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; color: #047857; background: #d1fae5; border-radius: 12px; font-size: 1.2rem; }
+.modal-cadastro { width: min(940px, calc(100vw - 24px)); height: min(850px, calc(100vh - 24px)); max-width: none; max-height: none; padding: 0; overflow: hidden; color: #1e293b; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 18px; box-shadow: 0 25px 80px rgb(2 6 23 / 35%); }
+.modal-cadastro::backdrop { background: rgb(2 6 23 / 68%); backdrop-filter: blur(3px); }
+.modal-cadastro[open] { display: flex; flex-direction: column; }
+.modal-cabecalho { display: flex; min-height: 66px; align-items: center; justify-content: space-between; padding: 12px 20px; background: #064e3b; color: white; }
+.modal-cabecalho h2 { margin: 0; font-size: 1.05rem; font-weight: 750; }
+.fechar-modal { width: 36px; height: 36px; color: white; background: rgb(255 255 255 / 12%); border: 0; border-radius: 10px; font-size: 1.6rem; line-height: 1; }
+.fechar-modal:hover { background: rgb(255 255 255 / 22%); }
+.modal-cadastro iframe { width: 100%; flex: 1; border: 0; background: #f8fafc; }
+
+/* A mesma página de cadastro aparece sem menu dentro do modal. */
+.mini-pagina { min-height: 100%; padding: 22px !important; background: #f8fafc !important; }
+.mini-pagina .conteudo-sistema { max-width: 850px; margin: 0 auto; padding: 0 0 18px; }
+.mini-pagina .conteudo-sistema > h1 { display: none; }
+.mini-pagina:not(.camisas):not(.chamadas) .conteudo-sistema > section:nth-of-type(2) { display: none; }
+.mini-pagina.chamadas .conteudo-sistema > section:first-of-type { display: none; }
+.mini-pagina.camisas .conteudo-sistema > section { margin-bottom: 14px; }
+.formulario-chamada { display: grid; gap: 14px; }
+.lista-chamada { display: grid; gap: 10px; }
+.item-chamada { display: grid; grid-template-columns: minmax(130px, 1fr) auto minmax(180px, 1.2fr); align-items: center; gap: 12px; padding: 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; }
+.item-chamada label { margin: 0 !important; white-space: nowrap; }
+.item-chamada input:not([type="checkbox"]) { margin: 0 !important; }
 
 @media (max-width: 760px) {
     .estrutura-sistema { grid-template-columns: 1fr; padding: 14px; }
@@ -108,4 +139,8 @@ button { cursor: pointer; }
     .conteudo-sistema section > form { grid-template-columns: 1fr; }
     .conteudo-sistema section > form > label:has(textarea), .conteudo-sistema section > form > label:has(select[name="cod_responsavel"]), .conteudo-sistema section > form > div { grid-column: auto; }
     .conteudo-sistema th, .conteudo-sistema td { padding: 9px; }
+    .login-testes .contas-teste { grid-template-columns: 1fr; }
+    .mini-pagina { padding: 14px !important; }
+    .item-chamada { grid-template-columns: 1fr auto; }
+    .item-chamada input:not([type="checkbox"]) { grid-column: 1 / -1; }
 }

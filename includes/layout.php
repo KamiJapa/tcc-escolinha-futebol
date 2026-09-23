@@ -16,6 +16,29 @@ function menuItem($url, $label, $icon, $roles) {
 
 function pageStart($title) {
     checkLogin();
+
+    // A mini tela usa a mesma página e o mesmo salvamento, sem repetir o menu.
+    if (isset($_GET['mini'])) {
+        $modoChamada = isset($_GET['chamadas']) ? ' chamadas' : '';
+        $modoCamisas = $title === 'Números das camisas' ? ' camisas' : '';
+        ?>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= e($title) ?> - GestorFC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="mini-pagina<?= $modoChamada . $modoCamisas ?> bg-slate-50 p-4 text-slate-800">
+    <main class="conteudo-sistema">
+        <h1 class="mb-5 text-xl font-bold text-emerald-950"><?= e($title) ?></h1>
+        <?php showFlash(); ?>
+        <?php
+        return;
+    }
+
     ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -39,6 +62,7 @@ function pageStart($title) {
             <nav class="grid gap-1" aria-label="Menu principal">
                 <?php menuItem('index.php', 'Início', '⌂', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL']); ?>
                 <?php menuItem('alunos.php', 'Alunos', '◉', ['ADMIN', 'SECRETARIA']); ?>
+                <?php menuItem('camisas.php', 'Camisas dos alunos', '⚽', ['ADMIN', 'SECRETARIA']); ?>
                 <?php menuItem('responsaveis.php', 'Responsáveis', '◌', ['ADMIN', 'SECRETARIA']); ?>
                 <?php menuItem('turmas.php', 'Turmas', '▦', ['ADMIN', 'SECRETARIA']); ?>
                 <?php menuItem('matriculas.php', 'Matrículas', '↔', ['ADMIN', 'SECRETARIA']); ?>
@@ -56,6 +80,10 @@ function pageStart($title) {
 }
 
 function pageEnd() {
+    if (isset($_GET['mini'])) {
+        echo '</main></body></html>';
+        return;
+    }
     echo '</main></div></body></html>';
 }
 

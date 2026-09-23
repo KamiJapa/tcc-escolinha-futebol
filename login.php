@@ -61,12 +61,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <section class="login-testes mt-6 border-t border-slate-700 pt-4 text-sm text-slate-300">
             <h2 class="font-bold text-white">Contas para teste</h2>
             <p>Senha das contas: <strong class="text-amber-300">123456</strong></p>
-            <ul>
-                <li>Administrador: admin@teste.com</li>
-                <li>Secretaria: secretaria@teste.com</li>
-                <li>Professor: professor@teste.com</li>
-                <li>Responsável: responsavel@teste.com</li>
-            </ul>
+            <div class="grid gap-2 sm:grid-cols-2">
+                <button class="conta-teste" type="button" onclick="usarConta('admin@teste.com')"><strong>Administrador</strong><span>admin@teste.com</span></button>
+                <button class="conta-teste" type="button" onclick="usarConta('secretaria@teste.com')"><strong>Secretaria</strong><span>secretaria@teste.com</span></button>
+                <button class="conta-teste" type="button" onclick="usarConta('professor@teste.com')"><strong>Professor</strong><span>professor@teste.com</span></button>
+                <button class="conta-teste" type="button" onclick="usarConta('responsavel@teste.com')"><strong>Responsável</strong><span>responsavel@teste.com</span></button>
+            </div>
         </section>
     </main>
 
@@ -74,6 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function mostrarSenha() {
             const campo = document.getElementById('senha');
             campo.type = campo.type === 'password' ? 'text' : 'password';
+        }
+
+        function usarConta(email) {
+            document.getElementById('email').value = email;
+            document.getElementById('senha').value = '123456';
         }
     </script>
 </body>
