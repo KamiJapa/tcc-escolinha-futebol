@@ -31,10 +31,8 @@ function showFlash() {
 
     $flash = $_SESSION['flash'];
     unset($_SESSION['flash']);
-    $colors = $flash['type'] === 'success'
-        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-        : 'bg-rose-50 border-rose-200 text-rose-800';
-    echo '<div class="mb-5 rounded-lg border px-4 py-3 text-sm ' . $colors . '">' . e($flash['message']) . '</div>';
+    $type = $flash['type'] === 'success' ? ' sucesso' : ' erro';
+    echo '<p class="mensagem' . $type . '">' . e($flash['message']) . '</p>';
 }
 
 function go($url) {

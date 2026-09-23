@@ -3,6 +3,8 @@
 
 // Database configuration constants
 define('DB_HOST', 'localhost');
+// XAMPP está configurado para usar a porta 3308 neste computador.
+define('DB_PORT', 3308);
 define('DB_NAME', 'BDESCOLINHA');
 define('DB_USER', 'root');
 define('DB_PASS', '');
@@ -18,7 +20,7 @@ function getDB() {
     
     if ($db === null) {
         try {
-            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+            $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
             $options = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
