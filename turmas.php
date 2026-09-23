@@ -3,7 +3,7 @@ require_once __DIR__ . '/includes/layout.php'; require_once __DIR__ . '/config/d
 checkRole(['ADMIN', 'SECRETARIA']); $db = getDB(); $escolinha = currentEscolinhaId(); $edit = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf(); $action = $_POST['action'] ?? ''; $id = (int) ($_POST['id'] ?? 0);
-    if ($action === 'delete') { $db->prepare('DELETE FROM TB_TURMA WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?')->execute([$id, $escolinha]); flash('success', 'Turma excluída.'); go('turmas.php'); }
+    if ($action === 'delete') { try { $db->prepare('DELETE FROM TB_TURMA WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?')->execute([$id, $escolinha]); flash('success', 'Turma excluída.'); } catch (PDOException $e) { flash('error', 'Não foi possível excluir esta turma porque há registros relacionados.'); } go('turmas.php'); }
     $nome = trim($_POST['nome'] ?? ''); $faixa = trim($_POST['faixa_etaria'] ?? ''); $dias = trim($_POST['dias_treino'] ?? ''); $horario = trim($_POST['horario'] ?? ''); $capacidade = (int) ($_POST['capacidade'] ?? 0); $professor = (int) ($_POST['cod_professor'] ?? 0); $ativa = isset($_POST['ativa']) ? 1 : 0;
     if ($nome === '' || $faixa === '' || $dias === '' || $horario === '' || $capacidade < 1) { flash('error', 'Preencha todos os campos e informe capacidade maior que zero.'); go('turmas.php' . ($id ? '?editar=' . $id : '')); }
     if ($professor) { $ok = $db->prepare("SELECT 1 FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = 'PROFESSOR'"); $ok->execute([$professor, $escolinha]); if (!$ok->fetchColumn()) { flash('error', 'Professor inválido.'); go('turmas.php'); } }

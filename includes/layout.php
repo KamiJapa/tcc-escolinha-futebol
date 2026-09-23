@@ -119,12 +119,15 @@ function pageStart($title) {
                     const iframeRecurso = document.getElementById('iframeRecurso');
                     const tituloModalRecurso = document.getElementById('tituloModalRecurso');
 
-                    document.querySelectorAll('[data-modal-url]').forEach(function (botao) {
-                        botao.addEventListener('click', function () {
-                            iframeRecurso.src = botao.dataset.modalUrl;
-                            tituloModalRecurso.textContent = botao.dataset.modalTitulo;
-                            modalRecurso.showModal();
-                        });
+                    document.addEventListener('click', function (evento) {
+                        const botao = evento.target.closest('[data-modal-url]');
+                        if (!botao) {
+                            return;
+                        }
+
+                        iframeRecurso.src = botao.dataset.modalUrl;
+                        tituloModalRecurso.textContent = botao.dataset.modalTitulo;
+                        modalRecurso.showModal();
                     });
 
                     document.getElementById('fecharModalRecurso').addEventListener('click', function () {
