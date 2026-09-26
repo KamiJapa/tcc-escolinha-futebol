@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/avaliacao_helpers.php';
+require_once __DIR__ . '/includes/notificacoes_helpers.php';
 checkRole(['ADMIN', 'PROFESSOR', 'SECRETARIA']);
 
 $db = getDB();
@@ -45,7 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($acao === 'delete') {
-        if (aulaDaEscolinha($db, $id, $escolinha, $professor)) {
+        $aulaExcluir = aulaDaEscolinha($db, $id, $escolinha, $professor);
+        if ($aulaExcluir) {
+            $destinatarios = notificacaoDestinatariosTurma($db, $escolinha, (int) $aulaExcluir['COD_TURMA']);
+            notificacaoEnviar($db, $escolinha, $destinatarios, 'ALTERACAO_TREINO', 'Treino cancelado', 'O treino “' . $aulaExcluir['TEMA_TREINO'] . '” de ' . notificacaoDataTreino($aulaExcluir['DATA_AULA'], $aulaExcluir['HORARIO']) . ' foi cancelado.', 'calendario.php', (int) $_SESSION['user_id']);
             $db->prepare('DELETE FROM TB_AULA WHERE COD_AULA = ?')->execute([$id]);
             flash('success', 'Aula excluída. As avaliações vinculadas serão preservadas no histórico.');
         }
@@ -95,6 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'INSERT INTO TB_AULA (COD_TURMA, DATA_AULA, HORARIO, TEMA_TREINO, OBJETIVO, EXERCICIOS, TIPO_TREINO, ATRIBUTOS_AVALIAVEIS_JSON, OBSERVACAO)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         )->execute([$turma, $data, $horario ?: null, $tema, $objetivo ?: null, $exercicios ?: null, $tipo, $atributosJson, $observacao ?: null]);
+        $id = (int) $db->lastInsertId();
+        notificacaoEnviar($db, $escolinha, notificacaoDestinatariosTurma($db, $escolinha, $turma), 'NOVO_TREINO', 'Novo treino', 'Foi marcado o treino “' . $tema . '” para ' . notificacaoDataTreino($data, $horario ?: null) . '.', 'calendario.php', (int) $_SESSION['user_id']);
         flash('success', 'Treino cadastrado.');
     } elseif ($acao === 'update') {
         if ($tipo === '' && $aulaAtual['TIPO_TREINO'] === null) {
@@ -104,6 +110,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'UPDATE TB_AULA SET COD_TURMA = ?, DATA_AULA = ?, HORARIO = ?, TEMA_TREINO = ?, OBJETIVO = ?, EXERCICIOS = ?, TIPO_TREINO = ?,
              ATRIBUTOS_AVALIAVEIS_JSON = ?, OBSERVACAO = ? WHERE COD_AULA = ?'
         )->execute([$turma, $data, $horario ?: null, $tema, $objetivo ?: null, $exercicios ?: null, $tipo ?: null, $atributosJson, $observacao ?: null, $id]);
+        $destinatarios = [];
+        foreach (array_unique([(int) $aulaAtual['COD_TURMA'], $turma]) as $turmaNotificada) {
+            $destinatarios = array_merge($destinatarios, notificacaoDestinatariosTurma($db, $escolinha, $turmaNotificada));
+        }
+        notificacaoEnviar($db, $escolinha, $destinatarios, 'ALTERACAO_TREINO', 'Treino atualizado', 'O treino “' . $tema . '” foi atualizado para ' . notificacaoDataTreino($data, $horario ?: null) . '.', 'calendario.php', (int) $_SESSION['user_id']);
         flash('success', 'Treino atualizado.');
     }
     go('aulas.php');

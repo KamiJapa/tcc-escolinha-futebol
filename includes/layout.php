@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/notificacoes_helpers.php';
 
 function menuItem($url, $label, $icon, $roles, $activeUrls = [], $badge = null, $section = null) {
     if (!hasRole($roles)) {
@@ -86,6 +87,8 @@ function pageStart($title) {
         'Usuários' => 'pagina-recursos pagina-usuarios'
     ];
     $classePagina = isset($paginas[$title]) ? ' ' . $paginas[$title] : '';
+    if (!function_exists('getDB')) require_once __DIR__ . '/../config/database.php';
+    $totalNaoLidas = notificacoesNaoLidas(getDB(), currentEscolinhaId(), (int) $_SESSION['user_id']);
     $acoesRapidas = [
         'Responsáveis' => [['Novo responsável', '♧', 'responsaveis.php?mini=1']],
         'Turmas' => [['Nova turma', '⚽', 'turmas.php?mini=1']],
@@ -140,7 +143,7 @@ function pageStart($title) {
                 <?php menuItem('aulas.php?secao=presenca', 'Presença', 'presence', ['ADMIN', 'PROFESSOR'], [], null, 'presenca'); ?>
                 <?php menuItem('metas.php', 'Metas', 'goal', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['metas.php']); ?>
                 <?php menuItem('camisas.php', 'Camisas', 'shirt', ['ADMIN', 'SECRETARIA'], ['camisas.php']); ?>
-                <?php menuIndisponivel('Notificações', 'bell', 0); ?>
+                <?php menuItem('notificacoes.php', 'Notificações', 'bell', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['notificacoes.php'], $totalNaoLidas > 0 ? $totalNaoLidas : null); ?>
 
                 <?php if (hasRole(['ADMIN', 'SECRETARIA'])): ?>
                     <p class="titulo-grupo-menu grupo-gestao">GESTÃO</p>

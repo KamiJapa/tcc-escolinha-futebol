@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/notificacoes_helpers.php';
 
 checkRole(['ADMIN', 'SECRETARIA']);
 $db = getDB();
@@ -21,9 +22,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             go($retorno);
         }
 
-        $verificarAluno = $db->prepare('SELECT 1 FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
+        $verificarAluno = $db->prepare('SELECT NOME, NUMERO_CAMISA FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
         $verificarAluno->execute([$aluno, $escolinha]);
-        if (!$verificarAluno->fetchColumn()) {
+        $dadosAluno = $verificarAluno->fetch();
+        if (!$dadosAluno) {
             flash('error', 'Aluno não encontrado nesta escolinha.');
             go($retorno);
         }
@@ -42,6 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $atualizar = $db->prepare('UPDATE TB_ALUNO SET NUMERO_CAMISA = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
         $atualizar->execute([$numero, $aluno, $escolinha]);
+        if (($dadosAluno['NUMERO_CAMISA'] === null ? null : (int) $dadosAluno['NUMERO_CAMISA']) !== $numero) {
+            $descricaoCamisa = $numero === null
+                ? 'O número de camisa de ' . $dadosAluno['NOME'] . ' foi removido.'
+                : $dadosAluno['NOME'] . ' agora está com o número de camisa ' . $numero . '.';
+            notificacaoEnviar($db, $escolinha, notificacaoDestinatariosAluno($db, $escolinha, $aluno), 'OUTRA_ALTERACAO', 'Atualização de camisa', $descricaoCamisa, 'meus_alunos.php', (int) $_SESSION['user_id']);
+        }
         flash('success', $numero === null ? 'Número de camisa removido.' : 'Número de camisa atualizado.');
         go($retorno);
     }
@@ -55,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             go($retorno);
         }
 
-        $buscar = $db->prepare('SELECT COD_ALUNO, NUMERO_CAMISA FROM TB_ALUNO WHERE COD_ESCOLINHA = ? AND COD_ALUNO IN (?, ?)');
+        $buscar = $db->prepare('SELECT COD_ALUNO, NOME, NUMERO_CAMISA FROM TB_ALUNO WHERE COD_ESCOLINHA = ? AND COD_ALUNO IN (?, ?)');
         $buscar->execute([$escolinha, $primeiro, $segundo]);
         $alunos = $buscar->fetchAll();
         if (count($alunos) !== 2) {
@@ -74,6 +82,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $atualizar->execute([$numeros[$segundo], $primeiro, $escolinha]);
             $atualizar->execute([$numeros[$primeiro], $segundo, $escolinha]);
             $db->commit();
+            if ($numeros[$primeiro] !== $numeros[$segundo]) {
+                $destinatarios = array_merge(notificacaoDestinatariosAluno($db, $escolinha, $primeiro), notificacaoDestinatariosAluno($db, $escolinha, $segundo));
+                $nomes = [];
+                foreach ($alunos as $alunoAtual) $nomes[(int) $alunoAtual['COD_ALUNO']] = $alunoAtual['NOME'];
+                notificacaoEnviar($db, $escolinha, $destinatarios, 'OUTRA_ALTERACAO', 'Atualização de camisas', 'Os números de camisa de ' . $nomes[$primeiro] . ' e ' . $nomes[$segundo] . ' foram trocados.', 'meus_alunos.php', (int) $_SESSION['user_id']);
+            }
             flash('success', 'Os números das camisas foram trocados.');
         } catch (PDOException $e) {
             $db->rollBack();

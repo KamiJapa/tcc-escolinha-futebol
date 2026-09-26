@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/notificacoes_helpers.php';
 checkRole(['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO']);
 
 $db = getDB();
@@ -82,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$jogo) {
             flash('error', 'Jogo não encontrado nesta escolinha.');
         } else {
+            notificacaoEnviar($db, $escolinha, notificacaoDestinatariosTurma($db, $escolinha, (int) $jogo['COD_TURMA']), 'OUTRA_ALTERACAO', 'Jogo cancelado', 'O jogo contra “' . $jogo['ADVERSARIO'] . '” foi cancelado.', 'jogos.php', $usuario);
             $db->prepare('DELETE FROM TB_JOGO WHERE COD_JOGO = ?')->execute([$id]);
             flash('success', 'Jogo removido.');
         }
@@ -157,6 +159,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $inserir = $db->prepare('INSERT INTO TB_JOGO_ATLETA (COD_JOGO, COD_ALUNO, TITULAR, PARTICIPOU, GOLS, ASSISTENCIAS) VALUES (?, ?, ?, ?, ?, ?)');
             foreach ($estatisticas as $estatistica) $inserir->execute(array_merge([$jogoId], $estatistica));
             $db->commit();
+            $destinatarios = [];
+            foreach (array_unique(array_filter([$atual ? (int) $atual['COD_TURMA'] : 0, $turmaId])) as $turmaNotificada) {
+                $destinatarios = array_merge($destinatarios, notificacaoDestinatariosTurma($db, $escolinha, $turmaNotificada));
+            }
+            notificacaoEnviar($db, $escolinha, $destinatarios, $id ? 'OUTRA_ALTERACAO' : 'NOVO_JOGO', $id ? 'Jogo atualizado' : 'Novo jogo', $id ? 'O jogo contra “' . $adversario . '” foi atualizado para ' . notificacaoDataTreino($data, $horario ?: null) . '.' : 'Foi marcado um jogo contra “' . $adversario . '” para ' . notificacaoDataTreino($data, $horario ?: null) . '.', 'jogos.php', $usuario);
             flash('success', $id ? 'Jogo atualizado e estatísticas recalculadas.' : 'Jogo cadastrado e estatísticas registradas.');
         } catch (Throwable $erro) {
             if ($db->inTransaction()) $db->rollBack();

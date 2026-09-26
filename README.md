@@ -25,9 +25,15 @@ O link **Cadastre-se** cria uma conta de responsável. Depois de criar a conta, 
 - `config/database.php`: abre e reutiliza a conexão com MySQL usando PDO.
 - `includes/auth.php`: controla a sessão, verifica permissões e confere a senha com `password_verify`.
 - `includes/helpers.php`: reúne funções pequenas para escapar texto, proteger formulários contra CSRF e mostrar mensagens.
+- `includes/notificacoes_helpers.php`: cria avisos para os usuários relacionados e calcula o contador de não lidas, sempre dentro da escolinha.
 - `includes/layout.php`: desenha o cabeçalho, menu e estrutura das páginas internas.
+- `notificacoes.php`: mostra, filtra e permite atualizar o estado de leitura dos avisos da conta conectada.
 - `assets/css/style.css`: cores, cartões, campos e estilos que completam a interface.
 - `database.sql`: cria as tabelas e inclui dados para demonstração.
+
+### Atualizar um banco já existente
+
+Para manter os dados atuais, não reimporte `database.sql`. Execute uma vez `migration_notificacoes.sql` no banco usado pelo sistema. Ela cria a tabela de notificações por escolinha e conta.
 
 ## Como o cadastro funciona
 

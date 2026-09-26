@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/layout.php'; require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/notificacoes_helpers.php';
 checkRole(['ADMIN', 'SECRETARIA']); $db = getDB(); $escolinha = currentEscolinhaId(); $edit = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf(); $action = $_POST['action'] ?? ''; $id = (int) ($_POST['id'] ?? 0);
@@ -9,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $q = $db->prepare('SELECT (SELECT COUNT(*) FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?) AS aluno_ok, (SELECT CAPACIDADE FROM TB_TURMA WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?) AS capacidade, (SELECT COUNT(*) FROM TB_MATRICULA WHERE COD_TURMA = ? AND STATUS = "ATIVA" AND COD_MATRICULA <> ?) AS ocupadas'); $q->execute([$aluno, $escolinha, $turma, $escolinha, $turma, $id]); $valid = $q->fetch();
     if (!$valid['aluno_ok'] || !$valid['capacidade'] || !$data || !in_array($status, ['ATIVA','ENCERRADA'], true)) { flash('error', 'Selecione aluno, turma e dados válidos.'); go('matriculas.php'); }
     if ($status === 'ATIVA' && $valid['ocupadas'] >= $valid['capacidade']) { flash('error', 'Esta turma já atingiu a capacidade máxima.'); go('matriculas.php'); }
-    try { if ($action === 'create') { $db->prepare('INSERT INTO TB_MATRICULA (COD_ALUNO, COD_TURMA, DATA_MATRICULA, STATUS) VALUES (?, ?, ?, ?)')->execute([$aluno, $turma, $data, $status]); flash('success','Matrícula criada.'); } elseif ($action === 'update') { $db->prepare('UPDATE TB_MATRICULA SET COD_ALUNO = ?, COD_TURMA = ?, DATA_MATRICULA = ?, STATUS = ? WHERE COD_MATRICULA = ?')->execute([$aluno, $turma, $data, $status, $id]); flash('success','Matrícula atualizada.'); } } catch (PDOException $e) { flash('error','Este aluno já possui matrícula nesta turma.'); }
+    try { if ($action === 'create') { $db->prepare('INSERT INTO TB_MATRICULA (COD_ALUNO, COD_TURMA, DATA_MATRICULA, STATUS) VALUES (?, ?, ?, ?)')->execute([$aluno, $turma, $data, $status]); notificacaoEnviar($db, $escolinha, notificacaoDestinatariosAluno($db, $escolinha, $aluno), 'NOVA_MATRICULA', 'Nova matrícula', 'Uma matrícula foi registrada para você na turma selecionada.', 'meus_alunos.php', (int) $_SESSION['user_id']); flash('success','Matrícula criada.'); } elseif ($action === 'update') { $db->prepare('UPDATE TB_MATRICULA SET COD_ALUNO = ?, COD_TURMA = ?, DATA_MATRICULA = ?, STATUS = ? WHERE COD_MATRICULA = ?')->execute([$aluno, $turma, $data, $status, $id]); flash('success','Matrícula atualizada.'); } } catch (PDOException $e) { flash('error','Este aluno já possui matrícula nesta turma.'); }
     go('matriculas.php');
 }
 if (isset($_GET['editar'])) { $q=$db->prepare('SELECT m.* FROM TB_MATRICULA m JOIN TB_ALUNO a ON a.COD_ALUNO=m.COD_ALUNO WHERE m.COD_MATRICULA=? AND a.COD_ESCOLINHA=?'); $q->execute([(int)$_GET['editar'],$escolinha]); $edit=$q->fetch(); if (!$edit) { flash('error','Matrícula não encontrada.'); go('matriculas.php'); } }

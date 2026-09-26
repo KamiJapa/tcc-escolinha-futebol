@@ -2,6 +2,7 @@
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/avaliacao_helpers.php';
+require_once __DIR__ . '/includes/notificacoes_helpers.php';
 checkRole(['ADMIN', 'PROFESSOR']);
 
 $db = getDB();
@@ -108,6 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     }
 
     $db->beginTransaction();
+    $novasAvaliacoes = [];
+    $avaliacoesAlteradas = [];
     try {
         if ($aulaSelecionada['TIPO_TREINO'] === null) {
             $atributosJson = $tipo === 'PERSONALIZADO' ? json_encode($customizados, JSON_UNESCAPED_UNICODE) : null;
@@ -118,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
                 ->execute([json_encode($customizados, JSON_UNESCAPED_UNICODE), $idAula]);
         }
 
-        $buscarExistente = $db->prepare('SELECT COD_AVALIACAO FROM TB_AVALIACAO WHERE COD_AULA = ? AND COD_ALUNO = ?');
+        $buscarExistente = $db->prepare('SELECT COD_AVALIACAO, CRITERIOS_JSON, NOTA_GERAL, OBSERVACAO FROM TB_AVALIACAO WHERE COD_AULA = ? AND COD_ALUNO = ?');
         $inserir = $db->prepare(
             'INSERT INTO TB_AVALIACAO (COD_AULA, COD_ALUNO, COD_PROFESSOR, DATA_AVALIACAO, CRITERIOS_JSON, NOTA_GERAL, OBSERVACAO)
              VALUES (?, ?, ?, ?, ?, ?, ?)'
@@ -129,15 +132,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         );
         foreach ($dadosParaSalvar as $dados) {
             $buscarExistente->execute([$idAula, $dados['aluno']]);
-            $existente = $buscarExistente->fetchColumn();
+            $existente = $buscarExistente->fetch();
             $json = json_encode($dados['criterios'], JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
             if ($existente) {
-                $atualizar->execute([$professor ?: (int) $_SESSION['user_id'], $aulaSelecionada['DATA_AULA'], $json, $dados['overall'], $dados['observacao'], $existente, $idAula]);
+                $criteriosAnterior = json_decode($existente['CRITERIOS_JSON'], true);
+                $criteriosAtual = json_decode($json, true);
+                $notaMudou = $existente['NOTA_GERAL'] === null ? $dados['overall'] !== null : ($dados['overall'] === null || (float) $existente['NOTA_GERAL'] !== (float) $dados['overall']);
+                if ($notaMudou || $criteriosAnterior !== $criteriosAtual || $existente['OBSERVACAO'] !== $dados['observacao']) $avaliacoesAlteradas[] = (int) $dados['aluno'];
+                $atualizar->execute([$professor ?: (int) $_SESSION['user_id'], $aulaSelecionada['DATA_AULA'], $json, $dados['overall'], $dados['observacao'], $existente['COD_AVALIACAO'], $idAula]);
             } else {
                 $inserir->execute([$idAula, $dados['aluno'], $professor ?: (int) $_SESSION['user_id'], $aulaSelecionada['DATA_AULA'], $json, $dados['overall'], $dados['observacao']]);
+                $novasAvaliacoes[] = (int) $dados['aluno'];
             }
         }
         $db->commit();
+        foreach ($novasAvaliacoes as $alunoAvaliado) {
+            notificacaoEnviar($db, $escolinha, notificacaoDestinatariosAluno($db, $escolinha, $alunoAvaliado), 'NOVA_AVALIACAO', 'Nova avaliação técnica', 'Uma avaliação de treino foi registrada para você em ' . notificacaoDataTreino($aulaSelecionada['DATA_AULA']) . '.', 'evolucao.php', (int) $_SESSION['user_id']);
+        }
+        foreach ($avaliacoesAlteradas as $alunoAvaliado) {
+            notificacaoEnviar($db, $escolinha, notificacaoDestinatariosAluno($db, $escolinha, $alunoAvaliado), 'OUTRA_ALTERACAO', 'Avaliação atualizada', 'Uma avaliação técnica do treino de ' . notificacaoDataTreino($aulaSelecionada['DATA_AULA']) . ' foi atualizada.', 'evolucao.php', (int) $_SESSION['user_id']);
+        }
         flash('success', 'Avaliações salvas. Notas anteriores deste treino foram atualizadas sem remover o histórico de outras sessões.');
     } catch (Throwable $erro) {
         $db->rollBack();
