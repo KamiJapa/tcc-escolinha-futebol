@@ -136,7 +136,7 @@ function pageStart($title) {
                 <?php menuIndisponivel('Jogos', 'game'); ?>
                 <?php menuIndisponivel('Calendário', 'calendar'); ?>
                 <?php menuItem('avaliacoes.php', 'Avaliações', 'evaluation', ['ADMIN', 'PROFESSOR'], ['avaliacoes.php']); ?>
-                <?php menuIndisponivel('Evolução', 'growth'); ?>
+                <?php menuItem('evolucao.php', 'Evolução', 'growth', ['RESPONSAVEL'], ['evolucao.php']); ?>
                 <?php menuItem('aulas.php?secao=presenca', 'Presença', 'presence', ['ADMIN', 'PROFESSOR'], [], null, 'presenca'); ?>
                 <?php menuIndisponivel('Metas', 'goal'); ?>
                 <?php menuItem('camisas.php', 'Camisas', 'shirt', ['ADMIN', 'SECRETARIA'], ['camisas.php']); ?>
