@@ -2,7 +2,7 @@
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/avaliacao_helpers.php';
-checkRole(['ADMIN', 'PROFESSOR']);
+checkRole(['ADMIN', 'PROFESSOR', 'SECRETARIA']);
 
 $db = getDB();
 $escolinha = currentEscolinhaId();
@@ -61,6 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $turma = (int) ($_POST['cod_turma'] ?? 0);
     $data = $_POST['data_aula'] ?? '';
     $tema = trim($_POST['tema_treino'] ?? '');
+    $horario = trim($_POST['horario'] ?? '');
+    $objetivo = trim($_POST['objetivo'] ?? '');
+    $exercicios = trim($_POST['exercicios'] ?? '');
     $observacao = trim($_POST['observacao'] ?? '');
     $tipo = $_POST['tipo_treino'] ?? '';
     $tiposValidos = avaliacaoTiposTreino();
@@ -77,7 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $consulta = $db->prepare($turmaSql);
     $consulta->execute($argumentosTurma);
 
-    if (!$consulta->fetchColumn() || !$data || !$tema || !$tipoValido
+    $dataValida = DateTime::createFromFormat('!Y-m-d', (string) $data);
+    $horarioValido = $horario === '' || preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $horario);
+    if (!$consulta->fetchColumn() || !$dataValida || $dataValida->format('Y-m-d') !== $data || !$tema || !$tipoValido || !$horarioValido
         || ($acao === 'create' && $tipo === '')
         || ($tipo === 'PERSONALIZADO' && !$customizados)) {
         flash('error', 'Revise turma, data, tema e tipo do treino. Treinos personalizados precisam de ao menos um atributo.');
@@ -87,18 +92,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $atributosJson = $tipo === 'PERSONALIZADO' ? json_encode($customizados, JSON_UNESCAPED_UNICODE) : null;
     if ($acao === 'create') {
         $db->prepare(
-            'INSERT INTO TB_AULA (COD_TURMA, DATA_AULA, TEMA_TREINO, TIPO_TREINO, ATRIBUTOS_AVALIAVEIS_JSON, OBSERVACAO)
-             VALUES (?, ?, ?, ?, ?, ?)'
-        )->execute([$turma, $data, $tema, $tipo, $atributosJson, $observacao ?: null]);
+            'INSERT INTO TB_AULA (COD_TURMA, DATA_AULA, HORARIO, TEMA_TREINO, OBJETIVO, EXERCICIOS, TIPO_TREINO, ATRIBUTOS_AVALIAVEIS_JSON, OBSERVACAO)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([$turma, $data, $horario ?: null, $tema, $objetivo ?: null, $exercicios ?: null, $tipo, $atributosJson, $observacao ?: null]);
         flash('success', 'Treino cadastrado.');
     } elseif ($acao === 'update') {
         if ($tipo === '' && $aulaAtual['TIPO_TREINO'] === null) {
             $atributosJson = $aulaAtual['ATRIBUTOS_AVALIAVEIS_JSON'];
         }
         $db->prepare(
-            'UPDATE TB_AULA SET COD_TURMA = ?, DATA_AULA = ?, TEMA_TREINO = ?, TIPO_TREINO = ?,
+            'UPDATE TB_AULA SET COD_TURMA = ?, DATA_AULA = ?, HORARIO = ?, TEMA_TREINO = ?, OBJETIVO = ?, EXERCICIOS = ?, TIPO_TREINO = ?,
              ATRIBUTOS_AVALIAVEIS_JSON = ?, OBSERVACAO = ? WHERE COD_AULA = ?'
-        )->execute([$turma, $data, $tema, $tipo ?: null, $atributosJson, $observacao ?: null, $id]);
+        )->execute([$turma, $data, $horario ?: null, $tema, $objetivo ?: null, $exercicios ?: null, $tipo ?: null, $atributosJson, $observacao ?: null, $id]);
         flash('success', 'Treino atualizado.');
     }
     go('aulas.php');
@@ -173,21 +178,24 @@ pageStart('Aulas e chamada');
         <?php if ($edit): ?><input type="hidden" name="id" value="<?= (int) $edit['COD_AULA'] ?>"><?php endif; ?>
         <label>Turma<select required name="cod_turma"><option value="">Selecione uma turma</option><?php foreach ($turmas as $turma): ?><option value="<?= (int) $turma['COD_TURMA'] ?>" <?= ($edit['COD_TURMA'] ?? '') == $turma['COD_TURMA'] ? 'selected' : '' ?>><?= e($turma['NOME']) ?></option><?php endforeach; ?></select></label>
         <label>Data<input required type="date" name="data_aula" value="<?= e($edit['DATA_AULA'] ?? date('Y-m-d')) ?>"></label>
-        <label>Tema do treino<input required name="tema_treino" value="<?= e($edit['TEMA_TREINO'] ?? '') ?>" placeholder="Ex.: Finalização + passe"></label>
+        <label>Horário<input type="time" name="horario" value="<?= e(!empty($edit['HORARIO']) ? substr((string) $edit['HORARIO'], 0, 5) : '') ?>"></label>
         <label>Tipo de treino<select name="tipo_treino" id="tipoTreino" <?= !$edit || $edit['TIPO_TREINO'] !== null ? 'required' : '' ?>><option value="" <?= $tipoAtual === '' ? 'selected' : '' ?>><?= $edit ? 'Não definido (treino antigo)' : 'Selecione' ?></option><?php foreach (avaliacaoTiposTreino() as $codigo => $tipo): ?><option value="<?= e($codigo) ?>" <?= $tipoAtual === $codigo ? 'selected' : '' ?>><?= e($tipo['nome']) ?></option><?php endforeach; ?></select></label>
+        <label>Nome do treino<input required name="tema_treino" value="<?= e($edit['TEMA_TREINO'] ?? '') ?>" placeholder="Ex.: Fundamentos e coletivo"></label>
+        <label>Objetivo do treino<textarea name="objetivo" rows="2" placeholder="O que a turma vai desenvolver nesta sessão?"><?= e($edit['OBJETIVO'] ?? '') ?></textarea></label>
+        <label class="treino-exercicios">Exercícios e aquecimento<textarea name="exercicios" rows="3" placeholder="Aquecimento, exercícios e dinâmica da sessão"><?= e($edit['EXERCICIOS'] ?? '') ?></textarea></label>
         <div class="atributos-customizados" id="atributosPersonalizados" <?= $tipoAtual === 'PERSONALIZADO' ? '' : 'hidden' ?>><strong>Atributos avaliáveis neste treino personalizado</strong><p>Marque o que será avaliado. Os outros atributos aparecerão como “Não avaliado”.</p><div class="avaliacao-check-grid"><?php foreach (avaliacaoCatalogoAtributos() as $codigo => $nome): ?><label><input type="checkbox" name="atributos_avaliaveis[]" value="<?= e($codigo) ?>" <?= in_array($codigo, $atributosAtuais, true) ? 'checked' : '' ?>><span><?= e($nome) ?></span></label><?php endforeach; ?></div></div>
-        <label class="treino-observacao">Observação<textarea name="observacao"><?= e($edit['OBSERVACAO'] ?? '') ?></textarea></label>
+        <label class="treino-observacao">Observações<textarea name="observacao" rows="2" placeholder="Informações para professor, atletas e responsáveis"><?= e($edit['OBSERVACAO'] ?? '') ?></textarea></label>
         <div class="treino-form-actions"><?php actionButton($edit ? 'Salvar alterações' : 'Cadastrar treino'); ?><?php if ($edit): ?><a href="aulas.php">Cancelar</a><?php endif; ?></div>
     </form>
 </section>
 
 <section class="lista-aulas-avaliacao">
-    <div class="avaliacao-section-heading"><div><p class="avaliacao-eyebrow">TREINOS REGISTRADOS</p><h2>Treinos e avaliações</h2><p>Abra uma sessão para avaliar os atletas e acompanhar os registros da semana.</p></div></div>
+    <div class="avaliacao-section-heading"><div><p class="avaliacao-eyebrow">TREINOS REGISTRADOS</p><h2>Treinos e avaliações</h2><p>Abra uma sessão para avaliar os atletas e acompanhar os registros da semana.</p></div><a class="avaliacao-voltar-treinos" href="calendario.php">Abrir calendário <span aria-hidden="true">↗</span></a></div>
     <div class="aula-avaliacao-lista">
         <?php foreach ($lista as $aula): $tipo = avaliacaoTiposTreino()[$aula['TIPO_TREINO']]['nome'] ?? 'Tipo não definido'; ?>
             <article class="aula-avaliacao-item">
                 <div class="aula-avaliacao-data"><strong><?= e(date('d', strtotime($aula['DATA_AULA']))) ?></strong><span><?= e(date('m/Y', strtotime($aula['DATA_AULA']))) ?></span></div>
-                <div class="aula-avaliacao-info"><strong><?= e($aula['TEMA_TREINO']) ?></strong><span><?= e($aula['TURMA']) ?> · <?= e($tipo) ?></span></div>
+                <div class="aula-avaliacao-info"><strong><?= e($aula['TEMA_TREINO']) ?></strong><span><?= e($aula['TURMA']) ?> · <?= e($tipo) ?><?= $aula['HORARIO'] ? ' · ' . e(substr((string) $aula['HORARIO'], 0, 5)) : '' ?></span><?php if (!empty($aula['OBJETIVO'])): ?><small><?= e($aula['OBJETIVO']) ?></small><?php endif; ?></div>
                 <span class="aula-avaliacao-count"><?= (int) $aula['AVALIACOES'] ?> avaliados</span>
                 <div class="aula-avaliacao-actions"><a class="botao-avaliar-treino" href="avaliacoes.php?aula=<?= (int) $aula['COD_AULA'] ?>"><?= (int) $aula['AVALIACOES'] ? 'Editar avaliações' : 'Avaliar treino' ?><span aria-hidden="true">↗</span></a><?php if (isset($_GET['mini'])): ?><a href="aulas.php?chamada=<?= (int) $aula['COD_AULA'] ?>&amp;mini=1">Chamada</a><a href="aulas.php?editar=<?= (int) $aula['COD_AULA'] ?>&amp;mini=1">Editar</a><?php else: ?><button type="button" class="acao-tabela" data-modal-url="aulas.php?chamada=<?= (int) $aula['COD_AULA'] ?>&amp;mini=1" data-modal-titulo="Fazer chamada">Chamada</button><button type="button" class="acao-tabela" data-modal-url="aulas.php?mini=1&amp;editar=<?= (int) $aula['COD_AULA'] ?>" data-modal-titulo="Editar treino">Editar</button><?php endif; ?></div>
             </article>

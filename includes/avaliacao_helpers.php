@@ -14,10 +14,14 @@ function avaliacaoCatalogoAtributos() {
 function avaliacaoTiposTreino() {
     return [
         'VELOCIDADE' => ['nome' => 'Velocidade', 'atributos' => ['velocidade']],
+        'FINALIZACAO' => ['nome' => 'Finalização', 'atributos' => ['finalizacao']],
+        'PASSE' => ['nome' => 'Passe', 'atributos' => ['passe']],
         'FINALIZACAO_PASSE' => ['nome' => 'Finalização + Passe', 'atributos' => ['finalizacao', 'passe']],
         'DRIBLE' => ['nome' => 'Drible', 'atributos' => ['drible']],
         'FISICO' => ['nome' => 'Preparação física', 'atributos' => ['fisico']],
         'POSICIONAMENTO' => ['nome' => 'Posicionamento', 'atributos' => ['posicionamento']],
+        'JOGO_TREINO' => ['nome' => 'Jogo-treino', 'atributos' => array_keys(avaliacaoCatalogoAtributos())],
+        'TREINO_MISTO' => ['nome' => 'Treino misto', 'atributos' => array_keys(avaliacaoCatalogoAtributos())],
         'TECNICO_GERAL' => ['nome' => 'Fundamentos gerais', 'atributos' => array_keys(avaliacaoCatalogoAtributos())],
         'PERSONALIZADO' => ['nome' => 'Personalizado', 'atributos' => null]
     ];

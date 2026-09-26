@@ -132,9 +132,9 @@ function pageStart($title) {
                 <p class="titulo-grupo-menu">PRINCIPAL</p>
                 <?php menuItem('index.php', 'Dashboard', 'dashboard', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['dashboard.php']); ?>
                 <?php menuIndisponivel('Meu Perfil', 'profile'); ?>
-                <?php menuItem('aulas.php', 'Treinos', 'training', ['ADMIN', 'PROFESSOR']); ?>
+                <?php menuItem('aulas.php', 'Treinos', 'training', ['ADMIN', 'PROFESSOR', 'SECRETARIA']); ?>
                 <?php menuIndisponivel('Jogos', 'game'); ?>
-                <?php menuIndisponivel('Calendário', 'calendar'); ?>
+                <?php menuItem('calendario.php', 'Calendário', 'calendar', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['calendario.php']); ?>
                 <?php menuItem('avaliacoes.php', 'Avaliações', 'evaluation', ['ADMIN', 'PROFESSOR'], ['avaliacoes.php']); ?>
                 <?php menuItem('evolucao.php', 'Evolução', 'growth', ['RESPONSAVEL'], ['evolucao.php']); ?>
                 <?php menuItem('aulas.php?secao=presenca', 'Presença', 'presence', ['ADMIN', 'PROFESSOR'], [], null, 'presenca'); ?>
