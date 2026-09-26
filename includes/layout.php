@@ -31,9 +31,9 @@ function pageStart($title) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="mini-pagina<?= $modoChamada . $modoCamisas ?> bg-slate-50 p-4 text-slate-800">
+<body class="mini-pagina<?= $modoChamada . $modoCamisas ?> bg-slate-950 p-4 text-slate-100">
     <main class="conteudo-sistema">
-        <h1 class="mb-5 text-xl font-bold text-emerald-950"><?= e($title) ?></h1>
+        <h1 class="mb-5 text-xl font-bold text-slate-100"><?= e($title) ?></h1>
         <?php showFlash(); ?>
         <?php
         return;
@@ -75,16 +75,16 @@ function pageStart($title) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body class="pagina-sistema<?= $classePagina ?> min-h-screen bg-slate-50 text-slate-800">
-    <header class="cabecalho-sistema bg-emerald-950 text-white shadow-lg">
+<body class="pagina-sistema<?= $classePagina ?> min-h-screen bg-slate-950 text-slate-100">
+    <header class="cabecalho-sistema bg-slate-950 text-white shadow-lg">
         <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4">
-            <a class="marca text-xl font-extrabold tracking-tight" href="index.php">Gestor<span class="text-amber-400">FC</span></a>
+            <a class="marca text-xl font-extrabold tracking-tight" href="index.php">Gestor<span class="text-emerald-400">FC</span></a>
             <p class="text-right text-sm"><?= e($_SESSION['username']) ?> (<?= e($_SESSION['user_role']) ?>)</p>
         </div>
     </header>
 
     <div class="estrutura-sistema mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[220px_1fr]">
-        <aside class="menu-lateral rounded-xl bg-emerald-950 p-3 shadow-sm">
+        <aside class="menu-lateral rounded-xl bg-slate-900 p-3 shadow-sm">
             <nav class="grid gap-1" aria-label="Menu principal">
                 <?php menuItem('index.php', 'Início', '⌂', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL']); ?>
                 <?php menuItem('alunos.php', 'Alunos', '◉', ['ADMIN', 'SECRETARIA']); ?>
