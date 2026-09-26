@@ -130,7 +130,7 @@ function pageStart($title) {
             <a class="marca-sidebar" href="index.php" aria-label="GestorFC, ir para o dashboard"><span class="logo-bola" aria-hidden="true">⚽</span><span><strong>Gestor<span>FC</span></strong><small>Escolinha de futebol</small></span></a>
             <nav class="navegacao-sidebar" aria-label="Menu principal">
                 <p class="titulo-grupo-menu">PRINCIPAL</p>
-                <?php menuItem('index.php', 'Dashboard', 'dashboard', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['index.php']); ?>
+                <?php menuItem('index.php', 'Dashboard', 'dashboard', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['dashboard.php']); ?>
                 <?php menuIndisponivel('Meu Perfil', 'profile'); ?>
                 <?php menuItem('aulas.php', 'Treinos', 'training', ['ADMIN', 'PROFESSOR']); ?>
                 <?php menuIndisponivel('Jogos', 'game'); ?>
