@@ -135,7 +135,7 @@ function pageStart($title) {
                 <?php menuItem('aulas.php', 'Treinos', 'training', ['ADMIN', 'PROFESSOR']); ?>
                 <?php menuIndisponivel('Jogos', 'game'); ?>
                 <?php menuIndisponivel('Calendário', 'calendar'); ?>
-                <?php menuIndisponivel('Avaliações', 'evaluation'); ?>
+                <?php menuItem('avaliacoes.php', 'Avaliações', 'evaluation', ['ADMIN', 'PROFESSOR'], ['avaliacoes.php']); ?>
                 <?php menuIndisponivel('Evolução', 'growth'); ?>
                 <?php menuItem('aulas.php?secao=presenca', 'Presença', 'presence', ['ADMIN', 'PROFESSOR'], [], null, 'presenca'); ?>
                 <?php menuIndisponivel('Metas', 'goal'); ?>

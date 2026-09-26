@@ -78,13 +78,18 @@ foreach ($atletas as &$atleta) {
     );
     $consulta->execute([$idAtleta]);
     $atleta['AVALIACOES'] = $consulta->fetchAll();
-    $atleta['OVERALL'] = $atleta['AVALIACOES'] ? (float) $atleta['AVALIACOES'][0]['NOTA_GERAL'] : null;
+    $atleta['AVALIACOES_COM_OVERALL'] = array_values(array_filter($atleta['AVALIACOES'], static function ($avaliacao) {
+        return $avaliacao['NOTA_GERAL'] !== null;
+    }));
+    $atleta['AVALIACAO_OVERALL'] = $atleta['AVALIACOES_COM_OVERALL'][0] ?? null;
+    $atleta['OVERALL'] = $atleta['AVALIACAO_OVERALL'] ? (float) $atleta['AVALIACAO_OVERALL']['NOTA_GERAL'] : null;
     $atleta['ATRIBUTOS'] = [];
-    if ($atleta['AVALIACOES']) {
-        $criterios = json_decode($atleta['AVALIACOES'][0]['CRITERIOS_JSON'], true);
+    if ($atleta['AVALIACAO_OVERALL']) {
+        $criterios = json_decode($atleta['AVALIACAO_OVERALL']['CRITERIOS_JSON'], true);
+        $atributosCarreira = ['velocidade', 'finalizacao', 'passe', 'drible', 'fisico', 'posicionamento'];
         if (is_array($criterios)) {
             foreach ($criterios as $nome => $nota) {
-                if (is_numeric($nota)) {
+                if (in_array(mb_strtolower((string) $nome, 'UTF-8'), $atributosCarreira, true) && is_numeric($nota)) {
                     $atleta['ATRIBUTOS'][] = ['nome' => carreiraRotuloAtributo($nome), 'nota' => min(10, max(0, (float) $nota))];
                 }
             }
@@ -92,9 +97,16 @@ foreach ($atletas as &$atleta) {
     }
 
     $atleta['EVOLUCAO'] = null;
-    if (count($atleta['AVALIACOES']) > 1) {
-        $maisAntiga = (float) $atleta['AVALIACOES'][count($atleta['AVALIACOES']) - 1]['NOTA_GERAL'];
+    if (count($atleta['AVALIACOES_COM_OVERALL']) > 1) {
+        $maisAntiga = (float) $atleta['AVALIACOES_COM_OVERALL'][count($atleta['AVALIACOES_COM_OVERALL']) - 1]['NOTA_GERAL'];
         $atleta['EVOLUCAO'] = round($atleta['OVERALL'] - $maisAntiga, 1);
+    }
+    $atleta['AVALIACAO_OBSERVACAO'] = null;
+    foreach ($atleta['AVALIACOES'] as $avaliacao) {
+        if (!empty($avaliacao['OBSERVACAO'])) {
+            $atleta['AVALIACAO_OBSERVACAO'] = $avaliacao;
+            break;
+        }
     }
 
     $consulta = $db->prepare(
@@ -113,8 +125,9 @@ foreach ($atletas as &$atleta) {
     foreach ($atleta['AVALIACOES'] as $avaliacao) {
         $historico[] = [
             'data' => $avaliacao['DATA_AVALIACAO'], 'tipo' => 'avaliacao',
-            'titulo' => 'Avaliação técnica', 'detalhe' => $avaliacao['PROFESSOR'] ?: 'Professor não identificado',
-            'nota' => (float) $avaliacao['NOTA_GERAL'], 'observacao' => $avaliacao['OBSERVACAO']
+            'titulo' => $avaliacao['NOTA_GERAL'] === null ? 'Avaliação sem notas' : 'Avaliação técnica',
+            'detalhe' => $avaliacao['PROFESSOR'] ?: 'Professor não identificado',
+            'nota' => $avaliacao['NOTA_GERAL'] === null ? null : (float) $avaliacao['NOTA_GERAL'], 'observacao' => $avaliacao['OBSERVACAO']
         ];
     }
     foreach ($atleta['HISTORICO_TREINOS'] as $treino) {
@@ -215,14 +228,14 @@ pageStart('Meu Perfil');
                     <div class="career-content">
                         <section class="career-card career-evolution">
                             <div class="career-section-title"><div><span class="career-section-icon blue" aria-hidden="true">↗</span><div><p>DESENVOLVIMENTO</p><h3>Evolução do Overall</h3></div></div><span class="career-context">Avaliações registradas</span></div>
-                            <?php if ($atleta['AVALIACOES']): ?>
-                                <div class="career-evolution-main"><strong><?= e(number_format($atleta['OVERALL'], 1, ',', '.')) ?></strong><span>última avaliação<br><?= e(date('d/m/Y', strtotime($atleta['AVALIACOES'][0]['DATA_AVALIACAO']))) ?></span><?php if ($atleta['EVOLUCAO'] !== null): ?><b class="<?= $atleta['EVOLUCAO'] >= 0 ? 'positive' : 'negative' ?>"><?= $atleta['EVOLUCAO'] > 0 ? '+' : '' ?><?= e(number_format($atleta['EVOLUCAO'], 1, ',', '.')) ?> <small>desde a 1ª</small></b><?php endif; ?></div>
-                                <div class="career-timeline-chart" role="img" aria-label="<?= count($atleta['AVALIACOES']) ?> avaliações registradas para acompanhar a evolução do Overall"><div class="career-chart-line"></div><div class="career-chart-points"><?php foreach (array_reverse(array_slice($atleta['AVALIACOES'], 0, 6)) as $indice => $avaliacao): $altura = max(10, min(100, (float) $avaliacao['NOTA_GERAL'] * 10)); ?><div class="career-chart-point"><span style="bottom: <?= e($altura) ?>%" title="Nota <?= e(number_format((float) $avaliacao['NOTA_GERAL'], 1, ',', '.')) ?>"></span><small><?= e(date('d/m', strtotime($avaliacao['DATA_AVALIACAO']))) ?></small></div><?php endforeach; ?></div></div>
+                            <?php if ($atleta['AVALIACAO_OVERALL']): ?>
+                                <div class="career-evolution-main"><strong><?= e(number_format($atleta['OVERALL'], 1, ',', '.')) ?></strong><span>última nota calculada<br><?= e(date('d/m/Y', strtotime($atleta['AVALIACAO_OVERALL']['DATA_AVALIACAO']))) ?></span><?php if ($atleta['EVOLUCAO'] !== null): ?><b class="<?= $atleta['EVOLUCAO'] >= 0 ? 'positive' : 'negative' ?>"><?= $atleta['EVOLUCAO'] > 0 ? '+' : '' ?><?= e(number_format($atleta['EVOLUCAO'], 1, ',', '.')) ?> <small>desde a 1ª</small></b><?php endif; ?></div>
+                                <div class="career-timeline-chart" role="img" aria-label="<?= count($atleta['AVALIACOES_COM_OVERALL']) ?> avaliações com Overall calculado"><div class="career-chart-line"></div><div class="career-chart-points"><?php foreach (array_reverse(array_slice($atleta['AVALIACOES_COM_OVERALL'], 0, 6)) as $indice => $avaliacao): $altura = max(10, min(100, (float) $avaliacao['NOTA_GERAL'] * 10)); ?><div class="career-chart-point"><span style="bottom: <?= e($altura) ?>%" title="Nota <?= e(number_format((float) $avaliacao['NOTA_GERAL'], 1, ',', '.')) ?>"></span><small><?= e(date('d/m', strtotime($avaliacao['DATA_AVALIACAO']))) ?></small></div><?php endforeach; ?></div></div>
                             <?php else: ?><div class="career-card-empty"><span>↗</span><p>A evolução começa após a primeira avaliação técnica.</p></div><?php endif; ?>
                         </section>
 
                         <section class="career-card career-attributes">
-                            <div class="career-section-title"><div><span class="career-section-icon green" aria-hidden="true">◈</span><div><p>LEITURA DE JOGO</p><h3>Atributos</h3></div></div><?php if ($atleta['AVALIACOES']): ?><span class="career-context">Última avaliação</span><?php endif; ?></div>
+                            <div class="career-section-title"><div><span class="career-section-icon green" aria-hidden="true">◈</span><div><p>LEITURA DE JOGO</p><h3>Atributos</h3></div></div><?php if ($atleta['AVALIACAO_OVERALL']): ?><span class="career-context">Último Overall</span><?php endif; ?></div>
                             <?php if ($atleta['ATRIBUTOS']): ?><div class="career-attribute-list"><?php foreach ($atleta['ATRIBUTOS'] as $atributo): ?><div class="career-attribute"><div><span><?= e($atributo['nome']) ?></span><strong><?= e(number_format($atributo['nota'], 1, ',', '.')) ?></strong></div><div class="career-attribute-track"><i style="width: <?= e($atributo['nota'] * 10) ?>%"></i></div></div><?php endforeach; ?></div><?php else: ?><div class="career-card-empty"><span>◈</span><p>Os atributos aparecem após uma avaliação técnica.</p></div><?php endif; ?>
                         </section>
 
@@ -252,12 +265,12 @@ pageStart('Meu Perfil');
                         <section class="career-card career-observations">
                             <div class="career-section-title"><div><span class="career-section-icon violet" aria-hidden="true">✎</span><div><p>CUIDADO E ACOMPANHAMENTO</p><h3>Observações</h3></div></div></div>
                             <?php if ($atleta['OBSERVACOES_MEDICAS']): ?><div class="career-observation"><span>OBSERVAÇÕES MÉDICAS</span><p><?= nl2br(e($atleta['OBSERVACOES_MEDICAS'])) ?></p></div><?php else: ?><div class="career-card-empty compact"><span>✎</span><p>Nenhuma observação registrada para este atleta.</p></div><?php endif; ?>
-                            <?php if ($atleta['AVALIACOES'] && $atleta['AVALIACOES'][0]['OBSERVACAO']): ?><div class="career-observation evaluation"><span>NOTA DA ÚLTIMA AVALIAÇÃO</span><p><?= nl2br(e($atleta['AVALIACOES'][0]['OBSERVACAO'])) ?></p><small><?= e($atleta['AVALIACOES'][0]['PROFESSOR'] ?: 'Professor não identificado') ?></small></div><?php endif; ?>
+                            <?php if ($atleta['AVALIACAO_OBSERVACAO']): ?><div class="career-observation evaluation"><span>NOTA DA ÚLTIMA AVALIAÇÃO</span><p><?= nl2br(e($atleta['AVALIACAO_OBSERVACAO']['OBSERVACAO'])) ?></p><small><?= e($atleta['AVALIACAO_OBSERVACAO']['PROFESSOR'] ?: 'Professor não identificado') ?></small></div><?php endif; ?>
                         </section>
 
                         <section class="career-card career-history">
                             <div class="career-section-title"><div><span class="career-section-icon blue" aria-hidden="true">⌁</span><div><p>JORNADA DO ATLETA</p><h3>Histórico</h3></div></div><span class="career-context"><?= count($atleta['HISTORICO']) ?> registros</span></div>
-                            <?php if ($atleta['HISTORICO']): ?><ol class="career-history-list"><?php foreach ($atleta['HISTORICO'] as $item): ?><li class="career-history-item"><span class="career-history-mark <?= e($item['tipo']) ?>" aria-hidden="true"><?= $item['tipo'] === 'avaliacao' ? '↗' : ($item['presente'] ? '✓' : '–') ?></span><div class="career-history-date"><?= e(date('d/m/Y', strtotime($item['data']))) ?></div><div class="career-history-content"><div><strong><?= e($item['titulo']) ?></strong><span><?= e($item['detalhe']) ?></span></div><?php if ($item['tipo'] === 'avaliacao'): ?><b class="career-history-score"><?= e(number_format($item['nota'], 1, ',', '.')) ?></b><?php else: ?><span class="career-history-status <?= $item['presente'] ? 'presente' : 'ausente' ?>"><?= $item['presente'] ? 'Presente' : 'Ausente' ?></span><?php endif; ?><?php if ($item['observacao']): ?><p><?= e($item['observacao']) ?></p><?php endif; ?></div></li><?php endforeach; ?></ol><?php else: ?><div class="career-card-empty compact"><span>⌁</span><p>O histórico será preenchido conforme treinos e avaliações forem registrados.</p></div><?php endif; ?>
+                            <?php if ($atleta['HISTORICO']): ?><ol class="career-history-list"><?php foreach ($atleta['HISTORICO'] as $item): ?><li class="career-history-item"><span class="career-history-mark <?= e($item['tipo']) ?>" aria-hidden="true"><?= $item['tipo'] === 'avaliacao' ? '↗' : ($item['presente'] ? '✓' : '–') ?></span><div class="career-history-date"><?= e(date('d/m/Y', strtotime($item['data']))) ?></div><div class="career-history-content"><div><strong><?= e($item['titulo']) ?></strong><span><?= e($item['detalhe']) ?></span></div><?php if ($item['tipo'] === 'avaliacao' && $item['nota'] !== null): ?><b class="career-history-score"><?= e(number_format($item['nota'], 1, ',', '.')) ?></b><?php elseif ($item['tipo'] === 'treino'): ?><span class="career-history-status <?= $item['presente'] ? 'presente' : 'ausente' ?>"><?= $item['presente'] ? 'Presente' : 'Ausente' ?></span><?php endif; ?><?php if ($item['observacao']): ?><p><?= e($item['observacao']) ?></p><?php endif; ?></div></li><?php endforeach; ?></ol><?php else: ?><div class="career-card-empty compact"><span>⌁</span><p>O histórico será preenchido conforme treinos e avaliações forem registrados.</p></div><?php endif; ?>
                         </section>
                     </div>
                 </article>
