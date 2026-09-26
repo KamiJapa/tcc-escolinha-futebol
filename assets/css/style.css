@@ -944,3 +944,165 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
     .calendario-page *, .calendario-page *::before { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* Partidas, escalações e estatísticas esportivas */
+.jogos-page { --jogo-line: rgb(148 163 184 / 14%); display: grid; width: 100%; min-width: 0; gap: 16px; color: #e7eff7; }
+.jogos-hero { position: relative; display: flex; min-height: 150px; align-items: center; justify-content: space-between; gap: 20px; overflow: hidden; padding: 24px 27px; background: radial-gradient(ellipse at 84% -10%, rgb(16 185 129 / 17%), transparent 45%), radial-gradient(ellipse at 100% 120%, rgb(59 130 246 / 11%), transparent 44%), linear-gradient(128deg, #142538, #101a29 72%); border: 1px solid var(--jogo-line); border-radius: 18px; box-shadow: 0 14px 34px rgb(0 0 0 / 13%); }
+.jogos-hero h2 { margin: 8px 0 5px; color: #f2f7fb; font-size: clamp(1.35rem, 2.5vw, 1.85rem); font-weight: 780; letter-spacing: -.045em; }
+.jogos-hero > div:first-child > p:last-child { margin: 0; color: #9caec1; font-size: .82rem; }
+.jogos-kicker { display: flex; align-items: center; gap: 8px; margin: 0; color: #70dcb2; font-size: .59rem; font-weight: 800; letter-spacing: .15em; }
+.jogos-kicker > span { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 4px rgb(52 211 153 / 10%); }
+.jogos-hero-resumo { display: flex; min-width: 148px; align-items: center; gap: 12px; padding: 13px 16px; background: rgb(15 25 39 / 70%); border: 1px solid var(--jogo-line); border-radius: 13px; }
+.jogos-hero-resumo > span { display: grid; width: 39px; height: 39px; place-items: center; color: #78e1bb; background: rgb(16 185 129 / 12%); border-radius: 11px; font-size: 1.3rem; }
+.jogos-hero-resumo > div { display: grid; gap: 2px; }
+.jogos-hero-resumo strong { color: #f0f7fc; font-size: 1.35rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.jogos-hero-resumo small { color: #93a7bb; font-size: .62rem; }
+.jogos-metricas { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
+.jogos-metricas article { display: grid; min-width: 0; gap: 5px; padding: 15px 17px; background: linear-gradient(140deg, #142234, #101a28); border: 1px solid var(--jogo-line); border-radius: 13px; }
+.jogos-metricas article > span { color: #9badbf; font-size: .67rem; }
+.jogos-metricas strong { color: #f2f7fb; font-size: 1.55rem; font-weight: 780; font-variant-numeric: tabular-nums; letter-spacing: -.04em; }
+.jogos-metricas small { color: #6f8499; font-size: .58rem; }
+.jogos-filtro-card { display: flex; align-items: end; justify-content: space-between; gap: 12px; padding: 13px 15px; background: #111d2c; border: 1px solid var(--jogo-line); border-radius: 13px; }
+.jogos-filtros { display: flex; align-items: end; gap: 9px; }
+.jogos-filtros label, .jogos-form > label, .jogos-placar label { display: grid; min-width: 0; gap: 5px; color: #92a6ba; font-size: .63rem; font-weight: 650; }
+.jogos-filtros select, .jogos-form input, .jogos-form select, .jogos-form textarea, .jogos-placar input { min-width: 0; padding: 9px 10px; color: #e7eff7; background: #0b1522; border: 1px solid rgb(148 163 184 / 18%); border-radius: 8px; font: inherit; font-size: .72rem; }
+.jogos-filtros select { min-width: 250px; height: 37px; padding-top: 0; padding-bottom: 0; }
+.jogos-form input:focus, .jogos-form select:focus, .jogos-form textarea:focus, .jogos-filtros select:focus { border-color: rgb(52 211 153 / 65%); outline: 2px solid rgb(52 211 153 / 24%); outline-offset: 1px; }
+.jogos-botao-principal, .jogos-botao-secundario { display: inline-flex; min-height: 37px; align-items: center; justify-content: center; gap: 6px; padding: 0 13px; border: 1px solid transparent; border-radius: 9px; font-size: .68rem; font-weight: 750; text-decoration: none; cursor: pointer; transition: transform .15s ease, filter .15s ease, border-color .15s ease; }
+.jogos-botao-principal { color: #062317; background: linear-gradient(135deg, #6ee7b7, #34d399); box-shadow: 0 5px 16px rgb(16 185 129 / 13%); }
+.jogos-botao-secundario { color: #cad7e4; background: #182638; border-color: var(--jogo-line); }
+.jogos-botao-principal:hover, .jogos-botao-secundario:hover { filter: brightness(1.07); transform: translateY(-1px); }
+.jogos-botao-principal:focus-visible, .jogos-botao-secundario:focus-visible, .jogo-card a:focus-visible, .jogo-card button:focus-visible, .jogo-detalhes summary:focus-visible { outline: 2px solid #6ee7b7; outline-offset: 3px; }
+.jogos-form-card, .jogos-lista-secao, .jogos-ranking-secao { min-width: 0; padding: 18px; background: #111c2b; border: 1px solid var(--jogo-line); border-radius: 15px; box-shadow: 0 12px 30px rgb(0 0 0 / 10%); }
+.jogos-titulo-secao { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.jogos-titulo-secao h2 { display: flex; align-items: center; gap: 9px; margin: 5px 0 3px; color: #edf4fa; font-size: 1.02rem; font-weight: 760; letter-spacing: -.025em; }
+.jogos-titulo-secao h2 > span, .jogos-ranking-count { display: inline-flex; min-width: 23px; height: 21px; align-items: center; justify-content: center; padding: 0 6px; color: #95e7c4; background: rgb(16 185 129 / 10%); border: 1px solid rgb(110 231 183 / 14%); border-radius: 7px; font-size: .62rem; }
+.jogos-titulo-secao > div > p:last-child { margin: 3px 0 0; color: #8499ae; font-size: .67rem; }
+.jogos-fechar-form { display: grid; width: 32px; height: 32px; place-items: center; color: #b7c6d5; background: #1b2a3c; border: 1px solid var(--jogo-line); border-radius: 9px; font-size: 1.2rem; text-decoration: none; }
+.jogos-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 12px; }
+.jogos-form > label > span, .jogos-placar label > span { color: #9bafc2; }
+.jogos-form input, .jogos-form select { height: 38px; }
+.jogos-form textarea { height: auto; min-height: 74px; resize: vertical; }
+.jogos-form-turma { grid-column: span 2; }
+.jogos-placar { display: grid; grid-column: span 2; grid-template-columns: 1fr 20px 1fr; align-items: end; gap: 8px; min-width: 0; margin: 0; padding: 10px; border: 1px solid var(--jogo-line); border-radius: 10px; }
+.jogos-placar legend { padding: 0 5px; color: #c7d5e2; font-size: .67rem; font-weight: 750; }
+.jogos-placar legend small { color: #72869b; font-size: .54rem; font-weight: 450; }
+.jogos-placar > b { padding-bottom: 10px; color: #647b91; text-align: center; }
+.jogos-form-observacoes { grid-column: span 2; }
+.jogos-elenco-form { grid-column: 1 / -1; min-width: 0; margin-top: 5px; padding-top: 14px; border-top: 1px solid var(--jogo-line); }
+.jogos-elenco-form .jogos-titulo-secao { margin-bottom: 9px; }
+.jogos-elenco-form h3 { margin: 0; color: #e4edf5; font-size: .82rem; font-weight: 740; }
+.jogos-elenco-form .jogos-titulo-secao p { margin: 3px 0 0; color: #8499ae; font-size: .64rem; }
+.jogos-elenco-lista { overflow: hidden; border: 1px solid var(--jogo-line); border-radius: 10px; }
+.jogos-elenco-cabecalho, .jogos-elenco-linha { display: grid; grid-template-columns: minmax(0, 1fr) 74px 74px 68px 68px; align-items: center; gap: 10px; padding: 8px 12px; }
+.jogos-elenco-cabecalho { color: #8297ab; background: #152235; font-size: .57rem; font-weight: 750; }
+.jogos-elenco-linha { min-height: 46px; border-top: 1px solid rgb(148 163 184 / 8%); }
+.jogos-elenco-linha > strong { overflow: hidden; color: #d9e4ee; font-size: .67rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.jogos-checkbox { display: flex; align-items: center; gap: 5px; color: #92a6ba; font-size: .59rem; cursor: pointer; }
+.jogos-checkbox input { width: 15px; height: 15px; accent-color: #34d399; }
+.jogos-stat-input input { width: 54px; height: 31px; padding: 4px 6px; text-align: center; }
+.jogos-sem-elenco, .jogos-vazio-inline { margin: 0; padding: 12px; color: #8599ad; font-size: .69rem; }
+.jogos-form-acoes { display: flex; grid-column: 1 / -1; flex-wrap: wrap; gap: 8px; }
+.jogos-lista { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.jogo-card { display: flex; min-width: 0; flex-direction: column; padding: 14px; background: linear-gradient(145deg, #142235, #101a28); border: 1px solid var(--jogo-line); border-radius: 13px; transition: border-color .15s ease, transform .15s ease; }
+.jogo-card:hover { border-color: rgb(110 231 183 / 23%); transform: translateY(-1px); }
+.jogo-card-cabecalho { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.jogo-card-cabecalho > div { display: grid; gap: 4px; }
+.jogo-data { color: #e0eaf3; font-size: .72rem; font-weight: 740; font-variant-numeric: tabular-nums; }
+.jogo-categoria { color: #8599ad; font-size: .59rem; }
+.jogo-status { flex: 0 0 auto; padding: 5px 7px; color: #b6c5d4; background: rgb(148 163 184 / 8%); border-radius: 7px; font-size: .54rem; font-weight: 720; }
+.jogo-status.agendado { color: #94c5fd; background: rgb(59 130 246 / 10%); }
+.jogo-status.venceu { color: #86e4bc; background: rgb(16 185 129 / 10%); }
+.jogo-status.empatou { color: #f6d384; background: rgb(245 158 11 / 9%); }
+.jogo-status.perdeu { color: #fda4af; background: rgb(244 63 94 / 9%); }
+.jogo-placar-card { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 16px 5px 14px; }
+.jogo-equipe { display: grid; justify-items: center; gap: 7px; text-align: center; }
+.jogo-equipe strong { max-width: 100%; overflow: hidden; color: #dce7f1; font-size: .67rem; text-overflow: ellipsis; white-space: nowrap; }
+.jogo-escudo { display: grid; width: 35px; height: 35px; place-items: center; color: #76e1b8; background: rgb(16 185 129 / 12%); border: 1px solid rgb(110 231 183 / 12%); border-radius: 11px; font-size: 1rem; }
+.adversario-escudo { color: #9ab4ce; background: rgb(148 163 184 / 9%); border-color: rgb(148 163 184 / 12%); }
+.jogo-resultado { display: grid; justify-items: center; gap: 4px; }
+.jogo-resultado strong { color: #f6f9fc; font-size: 1.55rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: .04em; white-space: nowrap; }
+.jogo-resultado small { color: #72879d; font-size: .51rem; font-weight: 800; letter-spacing: .12em; }
+.jogo-card-meta { display: flex; flex-wrap: wrap; gap: 6px 13px; padding: 9px 0; color: #8599ad; border-top: 1px solid rgb(148 163 184 / 9%); font-size: .58rem; }
+.jogo-observacao { margin: 2px 0 7px; color: #aab9c9; font-size: .64rem; line-height: 1.5; white-space: pre-line; }
+.jogo-detalhes { border-top: 1px solid rgb(148 163 184 / 9%); }
+.jogo-detalhes summary { padding: 9px 0 2px; color: #9de7c8; font-size: .61rem; font-weight: 700; cursor: pointer; }
+.jogo-participantes { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0 2px; }
+.jogo-participantes > span { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 5px 7px; color: #bccbd9; background: #1a293a; border: 1px solid rgb(148 163 184 / 8%); border-radius: 7px; font-size: .57rem; }
+.jogo-participantes b { color: #7fdfb6; font-size: .5rem; }
+.jogo-participantes small { color: #91a6ba; font-size: .52rem; }
+.jogo-card-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: auto; padding-top: 10px; }
+.jogo-card-acoes a, .jogo-card-acoes button { padding: 6px 8px; color: #a7bad0; background: transparent; border: 1px solid var(--jogo-line); border-radius: 7px; font: inherit; font-size: .58rem; text-decoration: none; cursor: pointer; }
+.jogo-card-acoes a:hover { color: #9de7c8; border-color: rgb(110 231 183 / 30%); }
+.jogo-card-acoes button:hover { color: #fda4af; border-color: rgb(251 113 133 / 30%); }
+.jogos-ranking-grupos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.jogos-ranking-card { min-width: 0; overflow: hidden; background: #121f2f; border: 1px solid var(--jogo-line); border-radius: 12px; }
+.jogos-ranking-card > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 13px; background: #152437; border-bottom: 1px solid var(--jogo-line); }
+.jogos-ranking-card > header > div { display: grid; gap: 3px; }
+.jogos-ranking-card > header strong { color: #e7eff7; font-size: .7rem; }
+.jogos-ranking-card > header > div > span { color: #879cb1; font-size: .58rem; }
+.jogos-tabela-scroll { overflow-x: auto; }
+.jogos-ranking-tabela { width: 100%; border-collapse: collapse; text-align: left; }
+.jogos-ranking-tabela th { padding: 8px 6px; color: #7f94a9; font-size: .54rem; font-weight: 700; white-space: nowrap; }
+.jogos-ranking-tabela td { padding: 9px 6px; color: #aec0d0; border-top: 1px solid rgb(148 163 184 / 7%); font-size: .61rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.jogos-ranking-tabela th:first-child, .jogos-ranking-tabela td:first-child { padding-left: 11px; }
+.jogos-ranking-tabela td:first-child { color: #dce6ef; }
+.jogos-ranking-tabela td:first-child strong { font-weight: 650; }
+.jogos-ranking-posicao { display: inline-grid; width: 19px; height: 19px; place-items: center; margin-right: 4px; color: #8fa4b8; background: #1b2a3b; border-radius: 6px; font-size: .53rem; }
+.jogos-gols-value { color: #7ee2b9; }
+.jogos-estado-vazio { display: flex; align-items: center; gap: 12px; padding: 16px; background: #121f2e; border: 1px dashed rgb(148 163 184 / 17%); border-radius: 11px; }
+.jogos-estado-vazio > span { color: #70dcb2; font-size: 1.4rem; }
+.jogos-estado-vazio > div { min-width: 0; }
+.jogos-estado-vazio strong { color: #dce7f1; font-size: .7rem; }
+.jogos-estado-vazio p { margin: 3px 0 0; color: #879cb0; font-size: .61rem; }
+.jogos-estado-vazio > a { margin-left: auto; color: #86e4bf; font-size: .61rem; font-weight: 700; text-decoration: none; }
+@media (max-width: 1050px) { .jogos-ranking-grupos { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) { .jogos-lista { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) {
+    .jogos-page { gap: 11px; }
+    .jogos-hero { min-height: 118px; padding: 17px; }
+    .jogos-hero > div:first-child > p:last-child { max-width: 42ch; font-size: .7rem; line-height: 1.5; }
+    .jogos-hero-resumo { min-width: 0; gap: 7px; padding: 8px; }
+    .jogos-hero-resumo > span { width: 31px; height: 31px; font-size: .95rem; }
+    .jogos-hero-resumo strong { font-size: 1.08rem; }
+    .jogos-hero-resumo small { max-width: 58px; font-size: .51rem; }
+    .jogos-metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .jogos-metricas article { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 5px; padding: 10px 11px; }
+    .jogos-metricas article > span { font-size: .58rem; }
+    .jogos-metricas strong { grid-column: 2; grid-row: 1 / span 2; font-size: 1.22rem; }
+    .jogos-metricas small { grid-column: 1; font-size: .52rem; }
+    .jogos-filtro-card { align-items: stretch; flex-direction: column; padding: 11px; }
+    .jogos-filtros { align-items: stretch; flex-direction: column; }
+    .jogos-filtros select { width: 100%; min-width: 0; }
+    .jogos-filtros .jogos-botao-secundario { width: 100%; }
+    .jogos-filtro-card > .jogos-botao-principal { width: 100%; }
+    .jogos-form-card, .jogos-lista-secao, .jogos-ranking-secao { padding: 13px; }
+    .jogos-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .jogos-form-turma, .jogos-placar { grid-column: 1 / -1; }
+    .jogos-form-observacoes { grid-column: 1 / -1; }
+    .jogos-form > label { font-size: .59rem; }
+    .jogos-form input, .jogos-form select, .jogos-form textarea { font-size: .68rem; }
+    .jogos-placar { grid-template-columns: minmax(0, 1fr) 14px minmax(0, 1fr); padding: 8px; }
+    .jogos-placar legend small { display: block; }
+    .jogos-elenco-cabecalho, .jogos-elenco-linha { grid-template-columns: minmax(0, 1fr) 53px 53px 47px 47px; gap: 5px; padding-right: 7px; padding-left: 7px; }
+    .jogos-elenco-cabecalho { font-size: .49rem; }
+    .jogos-elenco-linha > strong { font-size: .57rem; }
+    .jogos-checkbox { flex-direction: column; gap: 2px; font-size: .48rem; }
+    .jogos-checkbox input { width: 14px; height: 14px; }
+    .jogos-stat-input input { width: 43px; height: 29px; padding: 3px; font-size: .61rem; }
+    .jogos-form-acoes > * { flex: 1 1 auto; }
+    .jogo-card { padding: 12px; }
+    .jogo-placar-card { gap: 7px; padding: 13px 1px 12px; }
+    .jogo-equipe strong { font-size: .59rem; }
+    .jogo-resultado strong { font-size: 1.28rem; }
+    .jogos-ranking-card { margin: 0 -1px; }
+    .jogos-ranking-tabela th, .jogos-ranking-tabela td { padding-right: 5px; padding-left: 5px; font-size: .54rem; }
+    .jogos-ranking-posicao { width: 16px; height: 16px; margin-right: 2px; font-size: .47rem; }
+}
+@media (max-width: 370px) {
+    .jogos-hero { align-items: flex-start; }
+    .jogos-hero-resumo { flex-direction: column; align-items: center; }
+    .jogos-elenco-cabecalho, .jogos-elenco-linha { grid-template-columns: minmax(0, 1fr) 44px 44px 40px 40px; gap: 3px; padding-right: 5px; padding-left: 5px; }
+    .jogos-stat-input input { width: 37px; }
+}
+@media (prefers-reduced-motion: reduce) { .jogos-page *, .jogos-page *::before { transition-duration: .01ms !important; } }

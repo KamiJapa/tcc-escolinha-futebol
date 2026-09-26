@@ -133,7 +133,7 @@ function pageStart($title) {
                 <?php menuItem('index.php', 'Dashboard', 'dashboard', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['dashboard.php']); ?>
                 <?php menuIndisponivel('Meu Perfil', 'profile'); ?>
                 <?php menuItem('aulas.php', 'Treinos', 'training', ['ADMIN', 'PROFESSOR', 'SECRETARIA']); ?>
-                <?php menuIndisponivel('Jogos', 'game'); ?>
+                <?php menuItem('jogos.php', 'Jogos', 'game', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['jogos.php']); ?>
                 <?php menuItem('calendario.php', 'Calendário', 'calendar', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['calendario.php']); ?>
                 <?php menuItem('avaliacoes.php', 'Avaliações', 'evaluation', ['ADMIN', 'PROFESSOR'], ['avaliacoes.php']); ?>
                 <?php menuItem('evolucao.php', 'Evolução', 'growth', ['RESPONSAVEL'], ['evolucao.php']); ?>
