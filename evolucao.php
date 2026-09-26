@@ -2,7 +2,7 @@
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/avaliacao_helpers.php';
-checkRole(['RESPONSAVEL']);
+checkRole(['RESPONSAVEL', 'ALUNO']);
 
 $db = getDB();
 $escolinha = currentEscolinhaId();
@@ -16,7 +16,11 @@ $historicoAvaliacoes = [];
 $historicoPresencas = [];
 $catalogo = avaliacaoCatalogoAtributos();
 
-if ($responsavel) {
+if (hasRole(['ALUNO'])) {
+    $consulta = $db->prepare('SELECT COD_ALUNO, NOME, POSICAO, NUMERO_CAMISA FROM TB_ALUNO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
+    $consulta->execute([$_SESSION['user_id'], $escolinha]);
+    $atletas = $consulta->fetchAll();
+} elseif ($responsavel) {
     $consulta = $db->prepare(
         'SELECT COD_ALUNO, NOME, POSICAO, NUMERO_CAMISA
          FROM TB_ALUNO
@@ -137,7 +141,7 @@ pageStart('Evolução do atleta');
         <span class="evolucao-hero-icon" aria-hidden="true">↗</span>
     </header>
 
-    <?php if (!$responsavel): ?>
+    <?php if (!hasRole(['ALUNO']) && !$responsavel): ?>
         <section class="evolucao-empty"><span>◎</span><div><h3>Vínculo de responsável pendente</h3><p>Solicite à secretaria a associação do usuário ao cadastro de responsável para acompanhar os atletas.</p></div></section>
     <?php elseif ($atletas && !$atletaSelecionado): ?>
         <section class="evolucao-empty"><span>◎</span><div><h3>Atleta indisponível</h3><p>Escolha um atleta associado ao seu cadastro de responsável.</p><a href="evolucao.php">Voltar aos meus atletas</a></div></section>

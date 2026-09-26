@@ -2,7 +2,7 @@
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/avaliacao_helpers.php';
-checkRole(['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL']);
+checkRole(['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO']);
 
 $db = getDB();
 $escolinha = currentEscolinhaId();
@@ -12,6 +12,10 @@ if ($perfil === 'RESPONSAVEL') {
     $consultaResponsavel = $db->prepare('SELECT COD_RESPONSAVEL FROM TB_RESPONSAVEL WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
     $consultaResponsavel->execute([(int) $_SESSION['user_id'], $escolinha]);
     $responsavelId = (int) $consultaResponsavel->fetchColumn();
+} elseif ($perfil === 'ALUNO') {
+    $consultaAluno = $db->prepare('SELECT COD_ALUNO FROM TB_ALUNO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
+    $consultaAluno->execute([(int) $_SESSION['user_id'], $escolinha]);
+    $alunoId = (int) $consultaAluno->fetchColumn();
 }
 $mesInformado = (string) ($_GET['mes'] ?? date('Y-m'));
 $mesValido = DateTime::createFromFormat('!Y-m', $mesInformado);
@@ -26,16 +30,16 @@ $tipos = avaliacaoTiposTreino();
 $filtroTipo = (string) ($_GET['tipo'] ?? '');
 if (!isset($tipos[$filtroTipo])) $filtroTipo = '';
 
-if ($perfil === 'RESPONSAVEL') {
+if ($perfil === 'RESPONSAVEL' || $perfil === 'ALUNO') {
     $consulta = $db->prepare(
         "SELECT DISTINCT t.COD_TURMA, t.NOME
          FROM TB_TURMA t
          JOIN TB_MATRICULA m ON m.COD_TURMA = t.COD_TURMA AND m.STATUS = 'ATIVA'
          JOIN TB_ALUNO a ON a.COD_ALUNO = m.COD_ALUNO AND a.STATUS = 'ATIVO'
-         WHERE t.COD_ESCOLINHA = ? AND t.ATIVA = 1 AND a.COD_RESPONSAVEL = ?
+         WHERE t.COD_ESCOLINHA = ? AND t.ATIVA = 1 AND " . ($perfil === 'ALUNO' ? 'a.COD_ALUNO = ?' : 'a.COD_RESPONSAVEL = ?') . "
          ORDER BY t.NOME"
     );
-    $consulta->execute([$escolinha, $responsavelId]);
+    $consulta->execute([$escolinha, $perfil === 'ALUNO' ? $alunoId : $responsavelId]);
 } else {
     $sqlTurmas = 'SELECT t.COD_TURMA, t.NOME FROM TB_TURMA t WHERE t.COD_ESCOLINHA = ? AND t.ATIVA = 1';
     $parametrosTurmas = [$escolinha];
@@ -71,6 +75,9 @@ if ($perfil === 'PROFESSOR') {
           AND al.COD_RESPONSAVEL = ? AND al.COD_ESCOLINHA = t.COD_ESCOLINHA
     )";
     $parametrosEventos[] = $responsavelId;
+} elseif ($perfil === 'ALUNO') {
+    $sqlEventos .= " AND EXISTS (SELECT 1 FROM TB_MATRICULA m JOIN TB_ALUNO al ON al.COD_ALUNO = m.COD_ALUNO WHERE m.COD_TURMA = t.COD_TURMA AND m.STATUS = 'ATIVA' AND al.COD_ALUNO = ? AND al.COD_ESCOLINHA = t.COD_ESCOLINHA)";
+    $parametrosEventos[] = $alunoId;
 }
 if ($filtroTurma) {
     $sqlEventos .= ' AND t.COD_TURMA = ?';

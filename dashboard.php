@@ -3,6 +3,11 @@ require_once __DIR__ . '/includes/layout.php';
 checkLogin();
 require_once __DIR__ . '/config/database.php';
 
+if (($_SESSION['user_role'] ?? '') === 'ALUNO') {
+    header('Location: meus_alunos.php');
+    exit;
+}
+
 $db = getDB();
 $escolinha = currentEscolinhaId();
 $perfil = $_SESSION['user_role'];

@@ -13,8 +13,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = (int) ($_POST['id'] ?? 0);
 
     if ($action === 'delete') {
+        $stmt = $db->prepare('SELECT COD_USUARIO FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
+        $stmt->execute([$id, $escolinha]);
+        $usuarioAluno = (int) $stmt->fetchColumn();
+        $db->beginTransaction();
         $stmt = $db->prepare('DELETE FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
         $stmt->execute([$id, $escolinha]);
+        if ($usuarioAluno) {
+            $db->prepare('DELETE FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = "ALUNO"')->execute([$usuarioAluno, $escolinha]);
+        }
+        $db->commit();
         flash('success', 'Aluno excluído com sucesso.');
         go('alunos.php');
     }
@@ -25,6 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $posicao = trim($_POST['posicao'] ?? '');
     $status = $_POST['status'] ?? 'ATIVO';
     $observacoes = trim($_POST['observacoes_medicas'] ?? '');
+    $emailAluno = trim($_POST['email_acesso'] ?? '');
+    $senhaAluno = (string) ($_POST['senha_acesso'] ?? '');
 
     if ($nome === '' || $nascimento === '' || $responsavel <= 0 || strtotime($nascimento) > time() || !in_array($status, ['ATIVO', 'INATIVO', 'PENDENTE'], true)) {
         flash('error', 'Revise os campos obrigatórios e a data de nascimento.');
@@ -51,20 +61,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         go('alunos.php' . ($id ? '?editar=' . $id : ''));
     }
 
-    if ($action === 'create') {
-        $stmt = $db->prepare('INSERT INTO TB_ALUNO (COD_ESCOLINHA, COD_RESPONSAVEL, NOME, DATA_NASCIMENTO, POSICAO, STATUS, DATA_MATRICULA, OBSERVACOES_MEDICAS) VALUES (?, ?, ?, ?, ?, ?, CURDATE(), ?)');
-        $stmt->execute([$escolinha, $responsavel, $nome, $nascimento, $posicao ?: 'Não definida', $status, $observacoes ?: null]);
-        flash('success', 'Aluno cadastrado. Agora faça a matrícula em uma turma.');
-    } elseif ($action === 'update') {
-        $stmt = $db->prepare('UPDATE TB_ALUNO SET COD_RESPONSAVEL = ?, NOME = ?, DATA_NASCIMENTO = ?, POSICAO = ?, STATUS = ?, OBSERVACOES_MEDICAS = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
-        $stmt->execute([$responsavel, $nome, $nascimento, $posicao ?: 'Não definida', $status, $observacoes ?: null, $id, $escolinha]);
-        flash('success', 'Dados do aluno atualizados.');
+    if (($emailAluno !== '' && !filter_var($emailAluno, FILTER_VALIDATE_EMAIL)) || ($emailAluno !== '' && $senhaAluno !== '' && strlen($senhaAluno) < 6) || ($emailAluno === '' && $senhaAluno !== '')) {
+        flash('error', 'Para criar ou atualizar o acesso do aluno, informe um e-mail válido e uma senha de ao menos 6 caracteres.');
+        go('alunos.php' . ($id ? '?editar=' . $id : ''));
+    }
+
+    try {
+        $db->beginTransaction();
+        if ($action === 'create') {
+            $stmt = $db->prepare('INSERT INTO TB_ALUNO (COD_ESCOLINHA, COD_RESPONSAVEL, NOME, DATA_NASCIMENTO, POSICAO, STATUS, DATA_MATRICULA, OBSERVACOES_MEDICAS) VALUES (?, ?, ?, ?, ?, ?, CURDATE(), ?)');
+            $stmt->execute([$escolinha, $responsavel, $nome, $nascimento, $posicao ?: 'Não definida', $status, $observacoes ?: null]);
+            $id = (int) $db->lastInsertId();
+        } elseif ($action === 'update') {
+            $stmt = $db->prepare('UPDATE TB_ALUNO SET COD_RESPONSAVEL = ?, NOME = ?, DATA_NASCIMENTO = ?, POSICAO = ?, STATUS = ?, OBSERVACOES_MEDICAS = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
+            $stmt->execute([$responsavel, $nome, $nascimento, $posicao ?: 'Não definida', $status, $observacoes ?: null, $id, $escolinha]);
+        }
+
+        if ($emailAluno !== '') {
+            $stmt = $db->prepare('SELECT a.COD_USUARIO, u.NOME FROM TB_ALUNO a LEFT JOIN TB_USUARIO u ON u.COD_USUARIO = a.COD_USUARIO WHERE a.COD_ALUNO = ? AND a.COD_ESCOLINHA = ? FOR UPDATE');
+            $stmt->execute([$id, $escolinha]);
+            $acesso = $stmt->fetch();
+            if ($acesso && $acesso['COD_USUARIO']) {
+                if ($senhaAluno !== '') {
+                    $db->prepare('UPDATE TB_USUARIO SET NOME = ?, EMAIL = ?, SENHA_HASH = ?, ATIVO = 1 WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = "ALUNO"')
+                        ->execute([$nome, $emailAluno, password_hash($senhaAluno, PASSWORD_DEFAULT), $acesso['COD_USUARIO'], $escolinha]);
+                } else {
+                    $db->prepare('UPDATE TB_USUARIO SET NOME = ?, EMAIL = ?, ATIVO = 1 WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = "ALUNO"')
+                        ->execute([$nome, $emailAluno, $acesso['COD_USUARIO'], $escolinha]);
+                }
+            } elseif ($acesso) {
+                if (strlen($senhaAluno) < 6) throw new InvalidArgumentException('Informe uma senha de ao menos 6 caracteres para criar o primeiro acesso.');
+                $db->prepare('INSERT INTO TB_USUARIO (COD_ESCOLINHA,NOME,EMAIL,SENHA_HASH,PERFIL,ATIVO) VALUES (?,?,?,?,"ALUNO",1)')
+                    ->execute([$escolinha, $nome, $emailAluno, password_hash($senhaAluno, PASSWORD_DEFAULT)]);
+                $db->prepare('UPDATE TB_ALUNO SET COD_USUARIO = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?')->execute([(int) $db->lastInsertId(), $id, $escolinha]);
+            }
+        }
+        $db->commit();
+        flash('success', $action === 'create' ? 'Aluno cadastrado. Agora faça a matrícula em uma turma.' : 'Dados do aluno atualizados.');
+    } catch (InvalidArgumentException $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        flash('error', $e->getMessage());
+        go('alunos.php' . ($id ? '?editar=' . $id : ''));
+    } catch (PDOException $e) {
+        if ($db->inTransaction()) $db->rollBack();
+        flash('error', 'Não foi possível salvar o acesso. Verifique se o e-mail já está em uso.');
+        go('alunos.php' . ($id ? '?editar=' . $id : ''));
     }
     go('alunos.php');
 }
 
 if (isset($_GET['editar'])) {
-    $stmt = $db->prepare('SELECT * FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
+    $stmt = $db->prepare('SELECT a.*, u.EMAIL AS EMAIL_ACESSO FROM TB_ALUNO a LEFT JOIN TB_USUARIO u ON u.COD_USUARIO = a.COD_USUARIO AND u.PERFIL = "ALUNO" WHERE a.COD_ALUNO = ? AND a.COD_ESCOLINHA = ?');
     $stmt->execute([(int) $_GET['editar'], $escolinha]);
     $edit = $stmt->fetch();
     if (!$edit) {
@@ -96,6 +143,7 @@ $value = function ($field, $default = '') use ($edit) { return e($edit[$field] ?
         <label>Responsável<select required name="cod_responsavel"><option value="">Selecione</option><?php foreach ($responsaveis as $r): ?><option value="<?= (int) $r['COD_RESPONSAVEL'] ?>" <?= ($edit['COD_RESPONSAVEL'] ?? '') == $r['COD_RESPONSAVEL'] ? 'selected' : '' ?>><?= e($r['NOME']) ?></option><?php endforeach; ?></select></label>
         <label>Posição<input name="posicao" value="<?= $value('POSICAO', 'Meio-Campo') ?>"></label>
         <label>Situação<select name="status"><?php foreach (['ATIVO', 'INATIVO', 'PENDENTE'] as $status): ?><option <?= ($edit['STATUS'] ?? 'ATIVO') === $status ? 'selected' : '' ?>><?= $status ?></option><?php endforeach; ?></select></label>
+        <fieldset class="acesso-aluno"><legend>Acesso do aluno</legend><p>Opcional. O aluno poderá entrar com este e-mail e acompanhar seu perfil e criar metas.</p><label>E-mail de acesso<input type="email" name="email_acesso" value="<?= e($edit['EMAIL_ACESSO'] ?? '') ?>" autocomplete="off"></label><label><?= !empty($edit['EMAIL_ACESSO']) ? 'Nova senha (deixe vazia para manter)' : 'Senha inicial' ?><input type="password" name="senha_acesso" minlength="6" autocomplete="new-password" <?= empty($edit['EMAIL_ACESSO']) ? '' : '' ?>></label></fieldset>
         <label>Observações médicas<textarea name="observacoes_medicas"><?= $value('OBSERVACOES_MEDICAS') ?></textarea></label>
         <div><?php actionButton($edit ? 'Salvar alterações' : 'Cadastrar aluno'); ?><?php if ($edit): ?><a href="alunos.php">Cancelar</a><?php endif; ?></div>
     </form>

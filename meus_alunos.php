@@ -1,16 +1,37 @@
 <?php
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
-checkRole(['RESPONSAVEL']);
+checkRole(['RESPONSAVEL', 'ALUNO']);
 
 $db = getDB();
 $escolinha = currentEscolinhaId();
+$perfilAluno = hasRole(['ALUNO']);
 $consulta = $db->prepare('SELECT COD_RESPONSAVEL FROM TB_RESPONSAVEL WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
 $consulta->execute([$_SESSION['user_id'], $escolinha]);
 $responsavel = (int) $consulta->fetchColumn();
+$alunoAutenticado = 0;
+if ($perfilAluno) {
+    $consulta = $db->prepare('SELECT COD_ALUNO FROM TB_ALUNO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
+    $consulta->execute([$_SESSION['user_id'], $escolinha]);
+    $alunoAutenticado = (int) $consulta->fetchColumn();
+}
 $atletas = [];
 
-if ($responsavel) {
+if ($perfilAluno && $alunoAutenticado) {
+    $consulta = $db->prepare(
+        "SELECT a.*,
+                GROUP_CONCAT(DISTINCT t.NOME ORDER BY t.NOME SEPARATOR ', ') AS TURMAS,
+                GROUP_CONCAT(DISTINCT t.FAIXA_ETARIA ORDER BY t.FAIXA_ETARIA SEPARATOR ', ') AS CATEGORIAS,
+                COUNT(DISTINCT t.COD_TURMA) AS TOTAL_TURMAS
+         FROM TB_ALUNO a
+         LEFT JOIN TB_MATRICULA m ON m.COD_ALUNO = a.COD_ALUNO AND m.STATUS = 'ATIVA'
+         LEFT JOIN TB_TURMA t ON t.COD_TURMA = m.COD_TURMA AND t.ATIVA = 1
+         WHERE a.COD_ALUNO = ? AND a.COD_ESCOLINHA = ?
+         GROUP BY a.COD_ALUNO"
+    );
+    $consulta->execute([$alunoAutenticado, $escolinha]);
+    $atletas = $consulta->fetchAll();
+} elseif ($responsavel) {
     $consulta = $db->prepare(
         "SELECT a.*,
                 GROUP_CONCAT(DISTINCT t.NOME ORDER BY t.NOME SEPARATOR ', ') AS TURMAS,
@@ -196,10 +217,10 @@ pageStart('Meu Perfil');
         <div class="career-heading-badge"><span aria-hidden="true">✦</span> Perfil de desenvolvimento</div>
     </header>
 
-    <?php if (!$responsavel): ?>
+    <?php if (!$perfilAluno && !$responsavel): ?>
         <section class="career-empty"><span class="career-empty-icon" aria-hidden="true">◎</span><div><h2>Vínculo de responsável pendente</h2><p>Solicite à secretaria a associação do seu usuário ao cadastro de responsável para acessar a carreira dos atletas.</p></div></section>
     <?php elseif (!$atletas): ?>
-        <section class="career-empty"><span class="career-empty-icon" aria-hidden="true">⚽</span><div><h2>Nenhum atleta vinculado</h2><p>Quando um atleta for associado ao seu cadastro pela secretaria, seu perfil aparecerá aqui.</p></div></section>
+        <section class="career-empty"><span class="career-empty-icon" aria-hidden="true">⚽</span><div><h2><?= $perfilAluno ? 'Perfil de atleta indisponível' : 'Nenhum atleta vinculado' ?></h2><p><?= $perfilAluno ? 'Peça à secretaria para vincular seu acesso ao cadastro esportivo.' : 'Quando um atleta for associado ao seu cadastro pela secretaria, seu perfil aparecerá aqui.' ?></p></div></section>
     <?php else: ?>
         <div class="career-list">
             <?php foreach ($atletas as $atleta): ?>

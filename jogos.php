@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
-checkRole(['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL']);
+checkRole(['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO']);
 
 $db = getDB();
 $escolinha = currentEscolinhaId();
@@ -10,6 +10,7 @@ $usuario = (int) $_SESSION['user_id'];
 $podeGerenciar = hasRole(['ADMIN', 'SECRETARIA', 'PROFESSOR']);
 $responsavelId = 0;
 $alunosResponsavel = [];
+$alunoId = 0;
 if ($perfil === 'RESPONSAVEL') {
     $stmt = $db->prepare('SELECT COD_RESPONSAVEL FROM TB_RESPONSAVEL WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
     $stmt->execute([$usuario, $escolinha]);
@@ -19,14 +20,21 @@ if ($perfil === 'RESPONSAVEL') {
     $alunosResponsavel = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
 }
 
-if ($perfil === 'RESPONSAVEL') {
+if ($perfil === 'ALUNO') {
+    $stmt = $db->prepare('SELECT COD_ALUNO FROM TB_ALUNO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
+    $stmt->execute([$usuario, $escolinha]);
+    $alunoId = (int) $stmt->fetchColumn();
+    if ($alunoId) $alunosResponsavel = [$alunoId];
+}
+
+if ($perfil === 'RESPONSAVEL' || $perfil === 'ALUNO') {
     $stmt = $db->prepare(
-        'SELECT DISTINCT t.COD_TURMA, t.NOME, t.FAIXA_ETARIA
+        "SELECT DISTINCT t.COD_TURMA, t.NOME, t.FAIXA_ETARIA
          FROM TB_TURMA t JOIN TB_MATRICULA m ON m.COD_TURMA = t.COD_TURMA
          JOIN TB_ALUNO a ON a.COD_ALUNO = m.COD_ALUNO
-         WHERE t.COD_ESCOLINHA = ? AND a.COD_RESPONSAVEL = ? AND a.COD_ESCOLINHA = ? ORDER BY t.NOME'
+         WHERE t.COD_ESCOLINHA = ? AND " . ($perfil === 'ALUNO' ? 'a.COD_ALUNO = ?' : 'a.COD_RESPONSAVEL = ?') . " AND a.COD_ESCOLINHA = ? ORDER BY t.NOME"
     );
-    $stmt->execute([$escolinha, $responsavelId, $escolinha]);
+    $stmt->execute([$escolinha, $perfil === 'ALUNO' ? $alunoId : $responsavelId, $escolinha]);
 } else {
     $sql = 'SELECT COD_TURMA, NOME, FAIXA_ETARIA FROM TB_TURMA WHERE COD_ESCOLINHA = ?';
     $args = [$escolinha];
@@ -41,7 +49,7 @@ $turmas = $stmt->fetchAll();
 $idsTurmas = array_map(static function ($turma) { return (int) $turma['COD_TURMA']; }, $turmas);
 $baseUrl = 'jogos.php';
 
-function jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId) {
+function jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId, $alunoId = 0) {
     $sql = 'SELECT j.* FROM TB_JOGO j JOIN TB_TURMA t ON t.COD_TURMA = j.COD_TURMA WHERE j.COD_JOGO = ? AND t.COD_ESCOLINHA = ?';
     $params = [$id, $escolinha];
     if ($perfil === 'PROFESSOR') {
@@ -50,6 +58,9 @@ function jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId
     } elseif ($perfil === 'RESPONSAVEL') {
         $sql .= ' AND EXISTS (SELECT 1 FROM TB_MATRICULA m JOIN TB_ALUNO a ON a.COD_ALUNO = m.COD_ALUNO WHERE m.COD_TURMA = t.COD_TURMA AND a.COD_RESPONSAVEL = ?)';
         $params[] = $responsavelId;
+    } elseif ($perfil === 'ALUNO') {
+        $sql .= ' AND EXISTS (SELECT 1 FROM TB_MATRICULA m WHERE m.COD_TURMA = t.COD_TURMA AND m.STATUS = "ATIVA" AND m.COD_ALUNO = ?)';
+        $params[] = $alunoId;
     }
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
@@ -67,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $retorno = $baseUrl . (isset($_GET['mini']) ? '?mini=1' : '');
 
     if ($acao === 'excluir') {
-        $jogo = jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId);
+        $jogo = jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId, $alunoId);
         if (!$jogo) {
             flash('error', 'Jogo não encontrado nesta escolinha.');
         } else {
@@ -93,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $golsFora = $golsForaTexto === '' ? null : filter_var($golsForaTexto, FILTER_VALIDATE_INT);
         $resultadoValido = $resultadoVazio || ($golsCasa !== false && $golsFora !== false && $golsCasa !== null && $golsFora !== null && $golsCasa >= 0 && $golsCasa <= 99 && $golsFora >= 0 && $golsFora <= 99);
         $turmaPermitida = in_array($turmaId, $idsTurmas, true);
-        $atual = $id ? jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId) : null;
+        $atual = $id ? jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId, $alunoId) : null;
         if (!$turmaPermitida || !$adversario || mb_strlen($adversario) > 100 || !$dataValida || $dataValida->format('Y-m-d') !== $data || !$horaValida || !$resultadoValido || ($id && !$atual)) {
             flash('error', 'Confira turma, adversário, data, horário e resultado (0 a 99 gols).');
             go($retorno);
@@ -189,7 +200,7 @@ if ($jogos) {
     $stmt = $db->prepare("SELECT ja.*, a.NOME, a.NUMERO_CAMISA FROM TB_JOGO_ATLETA ja JOIN TB_ALUNO a ON a.COD_ALUNO = ja.COD_ALUNO WHERE ja.COD_JOGO IN ($marcadoresJogos) ORDER BY ja.TITULAR DESC, a.NOME");
     $stmt->execute($idsJogos);
     foreach ($stmt->fetchAll() as $linha) {
-        if ($perfil === 'RESPONSAVEL' && !in_array((int) $linha['COD_ALUNO'], $alunosResponsavel, true)) continue;
+        if (in_array($perfil, ['RESPONSAVEL', 'ALUNO'], true) && !in_array((int) $linha['COD_ALUNO'], $alunosResponsavel, true)) continue;
         $linhasPorJogo[(int) $linha['COD_JOGO']][] = $linha;
     }
 }
@@ -201,7 +212,7 @@ $sqlStats = "SELECT t.COD_TURMA, t.NOME AS TURMA, t.FAIXA_ETARIA, a.COD_ALUNO, a
     WHERE t.COD_ESCOLINHA = ? AND j.COD_TURMA IN ($marcadoresTurma) AND j.DATA_JOGO < CURDATE() AND ja.PARTICIPOU = 1";
 $paramsStats = array_merge([$escolinha], $idsPermitidos);
 if ($turmaFiltro) { $sqlStats .= ' AND t.COD_TURMA = ?'; $paramsStats[] = $turmaFiltro; }
-if ($perfil === 'RESPONSAVEL') {
+if (in_array($perfil, ['RESPONSAVEL', 'ALUNO'], true)) {
     if ($alunosResponsavel) {
         $sqlStats .= ' AND a.COD_ALUNO IN (' . implode(',', array_fill(0, count($alunosResponsavel), '?')) . ')';
         $paramsStats = array_merge($paramsStats, $alunosResponsavel);
@@ -217,7 +228,7 @@ foreach ($estatisticas as $estatistica) $estatisticasPorTurma[$estatistica['COD_
 $edit = null;
 $elencoEdicao = [];
 if ($podeGerenciar && isset($_GET['editar'])) {
-    $edit = jogoDaEscolinha($db, (int) $_GET['editar'], $escolinha, $perfil, $usuario, $responsavelId);
+    $edit = jogoDaEscolinha($db, (int) $_GET['editar'], $escolinha, $perfil, $usuario, $responsavelId, $alunoId);
     if (!$edit || !in_array((int) $edit['COD_TURMA'], $idsTurmas, true)) {
         flash('error', 'Jogo não encontrado nesta escolinha.');
         go('jogos.php');

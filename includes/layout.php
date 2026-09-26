@@ -131,14 +131,14 @@ function pageStart($title) {
             <nav class="navegacao-sidebar" aria-label="Menu principal">
                 <p class="titulo-grupo-menu">PRINCIPAL</p>
                 <?php menuItem('index.php', 'Dashboard', 'dashboard', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['dashboard.php']); ?>
-                <?php menuIndisponivel('Meu Perfil', 'profile'); ?>
+                <?php menuItem('meus_alunos.php', 'Meu Perfil', 'profile', ['ALUNO'], ['meus_alunos.php']); ?>
                 <?php menuItem('aulas.php', 'Treinos', 'training', ['ADMIN', 'PROFESSOR', 'SECRETARIA']); ?>
-                <?php menuItem('jogos.php', 'Jogos', 'game', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['jogos.php']); ?>
-                <?php menuItem('calendario.php', 'Calendário', 'calendar', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['calendario.php']); ?>
+                <?php menuItem('jogos.php', 'Jogos', 'game', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['jogos.php']); ?>
+                <?php menuItem('calendario.php', 'Calendário', 'calendar', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['calendario.php']); ?>
                 <?php menuItem('avaliacoes.php', 'Avaliações', 'evaluation', ['ADMIN', 'PROFESSOR'], ['avaliacoes.php']); ?>
-                <?php menuItem('evolucao.php', 'Evolução', 'growth', ['RESPONSAVEL'], ['evolucao.php']); ?>
+                <?php menuItem('evolucao.php', 'Evolução', 'growth', ['RESPONSAVEL', 'ALUNO'], ['evolucao.php']); ?>
                 <?php menuItem('aulas.php?secao=presenca', 'Presença', 'presence', ['ADMIN', 'PROFESSOR'], [], null, 'presenca'); ?>
-                <?php menuIndisponivel('Metas', 'goal'); ?>
+                <?php menuItem('metas.php', 'Metas', 'goal', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['metas.php']); ?>
                 <?php menuItem('camisas.php', 'Camisas', 'shirt', ['ADMIN', 'SECRETARIA'], ['camisas.php']); ?>
                 <?php menuIndisponivel('Notificações', 'bell', 0); ?>
 
