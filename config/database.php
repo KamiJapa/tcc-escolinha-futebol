@@ -3,9 +3,9 @@
 
 // Database configuration constants
 define('DB_HOST', 'localhost');
-// XAMPP está configurado para usar a porta 3308 neste computador.
-define('DB_PORT', 3308);
-define('DB_NAME', 'BDESCOLINHA');
+// Configuração padrão do MariaDB do XAMPP neste ambiente.
+define('DB_PORT', 3306);
+define('DB_NAME', 'bdescolinha');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
