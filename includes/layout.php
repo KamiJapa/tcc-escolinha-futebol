@@ -67,8 +67,9 @@ function pageStart($title) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?> - GestorFC</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <?php if ($title !== 'Meus filhos'): ?><script src="https://cdn.tailwindcss.com"></script><?php endif; ?>
     <link rel="stylesheet" href="assets/css/style.css">
+    <?php if ($title === 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/responsavel.css"><?php endif; ?>
 </head>
 <body class="mini-pagina<?= $modoChamada . $modoCamisas ?> bg-slate-950 p-4 text-slate-100">
     <main class="conteudo-sistema">
@@ -87,6 +88,7 @@ function pageStart($title) {
         'Usuários' => 'pagina-recursos pagina-usuarios'
     ];
     $classePagina = isset($paginas[$title]) ? ' ' . $paginas[$title] : '';
+    if ($title === 'Meus filhos') $classePagina .= ' pagina-familia';
     if (!function_exists('getDB')) require_once __DIR__ . '/../config/database.php';
     $totalNaoLidas = notificacoesNaoLidas(getDB(), currentEscolinhaId(), (int) $_SESSION['user_id']);
     $acoesRapidas = [
@@ -113,8 +115,9 @@ function pageStart($title) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?> - GestorFC</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <?php if ($title !== 'Meus filhos'): ?><script src="https://cdn.tailwindcss.com"></script><?php endif; ?>
     <link rel="stylesheet" href="assets/css/style.css">
+    <?php if ($title === 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/responsavel.css"><?php endif; ?>
 </head>
 <body class="pagina-sistema<?= $classePagina ?> min-h-screen bg-slate-950 text-slate-100">
     <header class="cabecalho-sistema bg-slate-950 text-white shadow-lg">
@@ -133,15 +136,15 @@ function pageStart($title) {
             <a class="marca-sidebar" href="index.php" aria-label="GestorFC, ir para o dashboard"><span class="logo-bola" aria-hidden="true">⚽</span><span><strong>Gestor<span>FC</span></strong><small>Escolinha de futebol</small></span></a>
             <nav class="navegacao-sidebar" aria-label="Menu principal">
                 <p class="titulo-grupo-menu">PRINCIPAL</p>
-                <?php menuItem('index.php', 'Dashboard', 'dashboard', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], ['dashboard.php']); ?>
+                <?php menuItem('index.php', 'Dashboard', 'dashboard', ['ADMIN', 'SECRETARIA', 'PROFESSOR'], ['dashboard.php']); ?>
                 <?php menuItem('meus_alunos.php', 'Meu Perfil', 'profile', ['ALUNO'], ['meus_alunos.php']); ?>
                 <?php menuItem('aulas.php', 'Treinos', 'training', ['ADMIN', 'PROFESSOR', 'SECRETARIA']); ?>
-                <?php menuItem('jogos.php', 'Jogos', 'game', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['jogos.php']); ?>
-                <?php menuItem('calendario.php', 'Calendário', 'calendar', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['calendario.php']); ?>
+                <?php menuItem('jogos.php', 'Jogos', 'game', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'ALUNO'], ['jogos.php']); ?>
+                <?php menuItem('calendario.php', 'Calendário', 'calendar', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'ALUNO'], ['calendario.php']); ?>
                 <?php menuItem('avaliacoes.php', 'Avaliações', 'evaluation', ['ADMIN', 'PROFESSOR'], ['avaliacoes.php']); ?>
-                <?php menuItem('evolucao.php', 'Evolução', 'growth', ['RESPONSAVEL', 'ALUNO'], ['evolucao.php']); ?>
+                <?php menuItem('evolucao.php', 'Evolução', 'growth', ['ALUNO'], ['evolucao.php']); ?>
                 <?php menuItem('aulas.php?secao=presenca', 'Presença', 'presence', ['ADMIN', 'PROFESSOR'], [], null, 'presenca'); ?>
-                <?php menuItem('metas.php', 'Metas', 'goal', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['metas.php']); ?>
+                <?php menuItem('metas.php', 'Metas', 'goal', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'ALUNO'], ['metas.php']); ?>
                 <?php menuItem('camisas.php', 'Camisas', 'shirt', ['ADMIN', 'SECRETARIA'], ['camisas.php']); ?>
                 <?php menuItem('notificacoes.php', 'Notificações', 'bell', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['notificacoes.php'], $totalNaoLidas > 0 ? $totalNaoLidas : null); ?>
 
@@ -155,7 +158,7 @@ function pageStart($title) {
                     <?php menuItem('matriculas.php', 'Matrículas', 'enrollments', ['ADMIN', 'SECRETARIA'], ['matriculas.php']); ?>
                 <?php endif; ?>
                 <?php menuItem('usuarios.php', 'Usuários', 'settings', ['ADMIN'], ['usuarios.php']); ?>
-                <?php menuItem('meus_alunos.php', 'Meus alunos', 'students', ['RESPONSAVEL'], ['meus_alunos.php']); ?>
+                <?php menuItem('area_responsavel.php', 'Meus filhos', 'students', ['RESPONSAVEL'], ['area_responsavel.php']); ?>
             </nav>
             <div class="rodape-sidebar"><a class="link-menu link-sair" href="logout.php"><svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg><span class="texto-menu">Sair</span></a></div>
         </aside>

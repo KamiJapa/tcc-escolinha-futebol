@@ -60,3 +60,29 @@ Para manter os dados atuais, não reimporte `database.sql`. Execute uma vez `mig
 - Em `index.php`, cada `prepare` prepara uma consulta SQL; `execute` envia o código da escolinha como parâmetro; `fetchColumn` lê o resultado simples, como uma contagem.
 - Em `cadastro.php`, `beginTransaction`, `commit` e `rollBack` garantem que a conta e o responsável sejam gravados juntos ou não sejam gravados.
 - Em `login.php`, a função JavaScript `mostrarSenha` só alterna o campo entre os tipos `password` e `text`.
+
+### Área do responsável
+
+`area_responsavel.php` centraliza o acompanhamento dos filhos: perfil, camisa,
+overall (última avaliação), atributos (média histórica), evolução, frequência,
+agenda, jogos, gols, assistências, metas, observações e notificações da conta.
+O próximo treino ganha prioridade no celular. Valores ausentes aparecem como
+sem registro, sem gerar estatísticas fictícias.
+
+O servidor deriva os filhos da conta autenticada e da escolinha. IDs não
+vinculados retornam 404; a área não aceita alterações. As rotas antigas de
+acompanhamento redirecionam responsáveis para essa visão, mantendo os demais
+perfis nas telas existentes. Relacionamentos de turmas, avaliações e jogos são
+filtrados pela escola, inclusive quando existem vínculos inconsistentes.
+Não há migração adicional: utiliza as tabelas e migrações já existentes.
+
+Teste de regressão (em um banco de teste com o schema aplicado):
+
+```powershell
+$env:TEST_DB_DSN = 'mysql:host=127.0.0.1;dbname=bdescolinha;charset=utf8mb4'
+php tests/responsavel_scope.php
+```
+
+As fixtures do teste são revertidas por transação. O teste cobre dois filhos,
+outro responsável, outra escola, conta sem vínculo, relações inconsistentes,
+estatísticas reais e estados sem dados.

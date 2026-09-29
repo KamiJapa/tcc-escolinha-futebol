@@ -1,5 +1,13 @@
 <?php
 require_once __DIR__ . '/includes/layout.php';
+// Visão individual com vínculo validado no servidor.
+if (hasRole(['RESPONSAVEL'])) {
+    checkLogin();
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') { http_response_code(403); exit('Acesso somente para consulta.'); }
+    header('Location: area_responsavel.php');
+    exit;
+}
+
 require_once __DIR__ . '/config/database.php';
 checkRole(['RESPONSAVEL', 'ALUNO']);
 
