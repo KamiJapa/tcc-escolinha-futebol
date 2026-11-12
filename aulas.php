@@ -34,12 +34,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             go('aulas.php');
         }
         $alunos = $_POST['alunos'] ?? [];
+        if (!is_array($alunos)) { http_response_code(400); exit('Chamada inválida.'); }
+        $q = $db->prepare("SELECT a.COD_ALUNO FROM TB_MATRICULA m JOIN TB_ALUNO a ON a.COD_ALUNO=m.COD_ALUNO WHERE m.COD_TURMA=? AND m.STATUS='ATIVA' AND a.COD_ESCOLINHA=? AND a.STATUS='ATIVO'");
+        $q->execute([$aula['COD_TURMA'], $escolinha]);
+        $permitidos = array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN));
+        foreach ($alunos as $codigo => $dados) {
+            if (!in_array((int) $codigo, $permitidos, true) || !is_array($dados) || mb_strlen($dados['justificativa'] ?? '') > 255) {
+                http_response_code(400); exit('Aluno ou justificativa inválidos para esta chamada.');
+            }
+        }
+        $db->beginTransaction();
+        try {
         $salvar = $db->prepare(
             'INSERT INTO TB_PRESENCA (COD_AULA, COD_ALUNO, PRESENTE, JUSTIFICATIVA) VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE PRESENTE = VALUES(PRESENTE), JUSTIFICATIVA = VALUES(JUSTIFICATIVA)'
         );
         foreach ($alunos as $codigo => $dados) {
             $salvar->execute([$id, (int) $codigo, isset($dados['presente']) ? 1 : 0, trim($dados['justificativa'] ?? '') ?: null]);
+        }
+        $db->commit();
+        } catch (Throwable $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            flash('error', 'Não foi possível salvar a chamada. Nenhuma presença foi alterada.');
+            go('aulas.php?chamada=' . $id);
         }
         flash('success', 'Chamada registrada.');
         go('aulas.php?chamada=' . $id);
@@ -93,6 +110,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         go('aulas.php' . (isset($_GET['mini']) ? '?mini=1' : ''));
     }
 
+    if ($aulaAtual && (int) $aulaAtual['COD_TURMA'] !== $turma) {
+        $q = $db->prepare('SELECT (SELECT COUNT(*) FROM TB_PRESENCA WHERE COD_AULA=?) + (SELECT COUNT(*) FROM TB_AVALIACAO WHERE COD_AULA=?)');
+        $q->execute([$id, $id]);
+        if ($q->fetchColumn()) {
+            flash('error', 'Este treino já tem chamada ou avaliações. Preserve a turma ou crie outro treino.');
+            go('aulas.php');
+        }
+    }
     $atributosJson = $tipo === 'PERSONALIZADO' ? json_encode($customizados, JSON_UNESCAPED_UNICODE) : null;
     if ($acao === 'create') {
         $db->prepare(
@@ -142,9 +167,9 @@ if (isset($_GET['chamada'])) {
         "SELECT a.COD_ALUNO, a.NOME, p.PRESENTE, p.JUSTIFICATIVA
          FROM TB_MATRICULA m JOIN TB_ALUNO a ON a.COD_ALUNO = m.COD_ALUNO
          LEFT JOIN TB_PRESENCA p ON p.COD_ALUNO = a.COD_ALUNO AND p.COD_AULA = ?
-         WHERE m.COD_TURMA = ? AND m.STATUS = 'ATIVA' ORDER BY a.NOME"
+         WHERE m.COD_TURMA = ? AND m.STATUS = 'ATIVA' AND a.COD_ESCOLINHA = ? AND a.STATUS = 'ATIVO' ORDER BY a.NOME"
     );
-    $consulta->execute([$aula['COD_AULA'], $aula['COD_TURMA']]);
+    $consulta->execute([$aula['COD_AULA'], $aula['COD_TURMA'], $escolinha]);
     $alunos = $consulta->fetchAll();
     pageStart('Chamada: ' . date('d/m/Y', strtotime($aula['DATA_AULA'])));
     ?>

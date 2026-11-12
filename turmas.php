@@ -6,7 +6,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete') { try { $db->prepare('DELETE FROM TB_TURMA WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?')->execute([$id, $escolinha]); flash('success', 'Turma excluída.'); } catch (PDOException $e) { flash('error', 'Não foi possível excluir esta turma porque há registros relacionados.'); } go('turmas.php'); }
     $nome = trim($_POST['nome'] ?? ''); $faixa = trim($_POST['faixa_etaria'] ?? ''); $dias = trim($_POST['dias_treino'] ?? ''); $horario = trim($_POST['horario'] ?? ''); $capacidade = (int) ($_POST['capacidade'] ?? 0); $professor = (int) ($_POST['cod_professor'] ?? 0); $ativa = isset($_POST['ativa']) ? 1 : 0;
     if ($nome === '' || $faixa === '' || $dias === '' || $horario === '' || $capacidade < 1) { flash('error', 'Preencha todos os campos e informe capacidade maior que zero.'); go('turmas.php' . ($id ? '?editar=' . $id : '')); }
-    if ($professor) { $ok = $db->prepare("SELECT 1 FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = 'PROFESSOR'"); $ok->execute([$professor, $escolinha]); if (!$ok->fetchColumn()) { flash('error', 'Professor inválido.'); go('turmas.php'); } }
+    if ($professor) { $ok = $db->prepare("SELECT 1 FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = 'PROFESSOR' AND ATIVO=1"); $ok->execute([$professor, $escolinha]); if (!$ok->fetchColumn()) { flash('error', 'Professor inválido.'); go('turmas.php'); } }
+    if ($action === 'update') {
+        $q = $db->prepare("SELECT COUNT(*) FROM TB_MATRICULA WHERE COD_TURMA=? AND STATUS='ATIVA'");
+        $q->execute([$id]);
+        if ((int) $q->fetchColumn() > $capacidade) { flash('error', 'A capacidade não pode ser menor que o número de matrículas ativas.'); go('turmas.php'); }
+    }
     if ($action === 'create') { $db->prepare('INSERT INTO TB_TURMA (COD_ESCOLINHA, COD_PROFESSOR, NOME, FAIXA_ETARIA, DIAS_TREINO, HORARIO, CAPACIDADE, ATIVA) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')->execute([$escolinha, $professor ?: null, $nome, $faixa, $dias, $horario, $capacidade, $ativa]); flash('success', 'Turma cadastrada.'); }
     if ($action === 'update') { $db->prepare('UPDATE TB_TURMA SET COD_PROFESSOR = ?, NOME = ?, FAIXA_ETARIA = ?, DIAS_TREINO = ?, HORARIO = ?, CAPACIDADE = ?, ATIVA = ? WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?')->execute([$professor ?: null, $nome, $faixa, $dias, $horario, $capacidade, $ativa, $id, $escolinha]); flash('success', 'Turma atualizada.'); }
     go('turmas.php');

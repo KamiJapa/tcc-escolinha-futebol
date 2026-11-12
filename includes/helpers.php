@@ -14,7 +14,7 @@ function csrfToken() {
 
 function checkCsrf() {
     $token = $_POST['csrf_token'] ?? '';
-    if (!hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
+    if (!is_string($token) || empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
         http_response_code(400);
         exit('Solicitação inválida. Atualize a página e tente novamente.');
     }
@@ -50,4 +50,16 @@ function currentEscolinhaId() {
 
 function hasRole($roles) {
     return in_array($_SESSION['user_role'] ?? '', $roles, true);
+}
+
+function validDate($value) {
+    if (!is_string($value)) return false;
+    $date = DateTime::createFromFormat('!Y-m-d', $value);
+    return $date && $date->format('Y-m-d') === $value;
+}
+
+function cpfFormat($value) {
+    $digits = preg_replace('/\D/', '', (string) $value);
+    if (strlen($digits) !== 11) return '';
+    return substr($digits, 0, 3) . '.' . substr($digits, 3, 3) . '.' . substr($digits, 6, 3) . '-' . substr($digits, 9);
 }

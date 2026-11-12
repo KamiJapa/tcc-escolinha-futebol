@@ -2,12 +2,13 @@
 // config/database.php
 
 // Database configuration constants
-define('DB_HOST', 'localhost');
+date_default_timezone_set('America/Sao_Paulo');
+define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
 // Configuração padrão do MariaDB do XAMPP neste ambiente.
-define('DB_PORT', 3306);
-define('DB_NAME', 'bdescolinha');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_PORT', getenv('DB_PORT') ?: 3306);
+define('DB_NAME', getenv('DB_NAME') ?: 'bdescolinha');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') ?: '');
 
 /**
  * Get a PDO database connection instance.

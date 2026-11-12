@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $db->prepare('SELECT COD_USUARIO FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
         $stmt->execute([$id, $escolinha]);
         $usuarioAluno = (int) $stmt->fetchColumn();
+        try {
         $db->beginTransaction();
         $stmt = $db->prepare('DELETE FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
         $stmt->execute([$id, $escolinha]);
@@ -24,6 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $db->commit();
         flash('success', 'Aluno excluído com sucesso.');
+        } catch (PDOException $error) {
+            if ($db->inTransaction()) $db->rollBack();
+            flash('error', 'Não foi possível excluir: há registros vinculados. Inative o aluno para preservar o histórico.');
+        }
         go('alunos.php');
     }
 
@@ -36,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emailAluno = trim($_POST['email_acesso'] ?? '');
     $senhaAluno = (string) ($_POST['senha_acesso'] ?? '');
 
-    if ($nome === '' || $nascimento === '' || $responsavel <= 0 || strtotime($nascimento) > time() || !in_array($status, ['ATIVO', 'INATIVO', 'PENDENTE'], true)) {
+    if ($nome === '' || !validDate($nascimento) || $responsavel <= 0 || strtotime($nascimento) > time() || !in_array($status, ['ATIVO', 'INATIVO', 'PENDENTE'], true)) {
         flash('error', 'Revise os campos obrigatórios e a data de nascimento.');
         go('alunos.php' . ($id ? '?editar=' . $id : ''));
     }
@@ -130,7 +135,7 @@ $lista = $lista->fetchAll();
 pageStart('Alunos');
 $value = function ($field, $default = '') use ($edit) { return e($edit[$field] ?? $default); };
 ?>
-<?php if (isset($_GET['mini'])): ?>
+<?php if (isset($_GET['mini']) || $edit): ?>
 <section>
     <h2><?= $edit ? 'Editar aluno' : 'Novo aluno' ?></h2>
     <?php if (!$responsaveis): ?><p>Cadastre um responsável antes de cadastrar um aluno.</p><?php else: ?>

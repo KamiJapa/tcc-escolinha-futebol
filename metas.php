@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$podeCriarMetas || !$atletas) { http_response_code(403); exit('Apenas o aluno pode gerenciar suas próprias metas.'); }
     $alunoId = (int) $atletas[0]['COD_ALUNO'];
     $acao = $_POST['acao'] ?? '';
+    if (!in_array($acao, ['criar','editar','excluir'], true)) { http_response_code(400); exit('Ação inválida.'); }
     $metaId = (int) ($_POST['meta'] ?? 0);
     if ($acao === 'excluir') {
         $q = $db->prepare('DELETE FROM TB_META_ATLETA WHERE COD_META = ? AND COD_ALUNO = ? AND CRIADO_POR = ?');

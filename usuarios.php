@@ -31,11 +31,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $perfil = $_POST['perfil'] ?? '';
     $senha = $_POST['senha'] ?? '';
     $ativo = isset($_POST['ativo']) ? 1 : 0;
-    if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || !in_array($perfil, ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], true) || ($acao === 'create' && strlen($senha) < 6)) {
+    if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || !in_array($perfil, ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], true) || (($acao === 'create' || $senha !== '') && strlen($senha) < 6)) {
         flash('error', 'Informe nome, e-mail válido, perfil e senha de ao menos 6 caracteres para um novo usuário.');
         go('usuarios.php' . ($id ? '?editar=' . $id : ''));
     }
 
+    if ($id === (int) $_SESSION['user_id'] && ($perfil !== 'ADMIN' || !$ativo)) {
+        flash('error', 'Mantenha seu próprio usuário ativo como administrador.');
+        go('usuarios.php');
+    }
     try {
         if ($acao === 'create') {
             $db->prepare('INSERT INTO TB_USUARIO (COD_ESCOLINHA,NOME,EMAIL,SENHA_HASH,PERFIL,ATIVO) VALUES (?,?,?,?,?,?)')
@@ -76,7 +80,7 @@ if (isset($_GET['editar'])) {
     $edit = $consulta->fetch();
     if (!$edit) { flash('error', 'Usuário não encontrado.'); go('usuarios.php'); }
     if ($edit['PERFIL'] === 'ALUNO') {
-        if (!empty($edit['COD_ALUNO'])) go('alunos.php?editar=' . (int) $edit['COD_ALUNO']);
+        if (!empty($edit['COD_ALUNO'])) go('alunos.php?mini=1&editar=' . (int) $edit['COD_ALUNO']);
         flash('error', 'Este acesso de aluno não está vinculado a um cadastro esportivo.');
         go('usuarios.php');
     }
