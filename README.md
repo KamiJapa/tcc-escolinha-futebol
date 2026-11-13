@@ -33,7 +33,7 @@ O link **Cadastre-se** cria uma conta de responsável. Depois de criar a conta, 
 
 ### Atualizar um banco já existente
 
-Para manter os dados atuais, não reimporte `database.sql`. Execute uma vez `migration_notificacoes.sql` no banco usado pelo sistema. Ela cria a tabela de notificações por escolinha e conta.
+Para manter os dados atuais, não reimporte `database.sql`. Execute uma vez `migration_notificacoes.sql` no banco usado pelo sistema. Ela cria a tabela de notificações por escolinha e conta. Se o banco ainda não tiver `TB_FINANCEIRO`, execute também `migration_financeiro.sql` para instalar a estrutura usada pelo módulo financeiro.
 
 ## Como o cadastro funciona
 

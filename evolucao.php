@@ -39,7 +39,10 @@ if (hasRole(['ALUNO'])) {
     $atletas = $consulta->fetchAll();
 }
 
-$idAtleta = (int) ($_GET['aluno'] ?? ($atletas[0]['COD_ALUNO'] ?? 0));
+$idAtletaSolicitado = filter_var($_GET['aluno'] ?? null, FILTER_VALIDATE_INT);
+$idAtleta = $idAtletaSolicitado === false || $idAtletaSolicitado === null
+    ? (int) ($atletas[0]['COD_ALUNO'] ?? 0)
+    : $idAtletaSolicitado;
 foreach ($atletas as $atleta) {
     if ((int) $atleta['COD_ALUNO'] === $idAtleta) {
         $atletaSelecionado = $atleta;

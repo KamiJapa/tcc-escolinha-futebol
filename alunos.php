@@ -15,10 +15,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete') {
         $stmt = $db->prepare('SELECT COD_USUARIO FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
         $stmt->execute([$id, $escolinha]);
+        $usuarioAluno = $stmt->fetchColumn();
+        if ($usuarioAluno === false) { flash('error', 'Aluno não encontrado nesta escolinha.'); go('alunos.php'); }
         $vinculos = $db->prepare('SELECT (SELECT COUNT(*) FROM TB_MATRICULA WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_PRESENCA WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_AVALIACAO WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_JOGO_ATLETA WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_META_ATLETA WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_FINANCEIRO WHERE COD_ALUNO=?)');
         $vinculos->execute(array_fill(0,6,$id));
         if ($vinculos->fetchColumn()) { flash('error', 'Este aluno possui histórico vinculado. Inative o cadastro para preservá-lo.'); go('alunos.php'); }
-        $usuarioAluno = (int) $stmt->fetchColumn();
+        $usuarioAluno = (int) $usuarioAluno;
         try {
         $db->beginTransaction();
         $stmt = $db->prepare('DELETE FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
@@ -39,9 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nascimento = $_POST['data_nascimento'] ?? '';
     $responsavel = (int) ($_POST['cod_responsavel'] ?? 0);
     $posicao = trim($_POST['posicao'] ?? '');
-    if (mb_strlen($nome)>100 || mb_strlen($posicao)>30 || mb_strlen($observacoes)>65535) { flash('error','Nome (até 100 caracteres), posição (até 30) ou observações excedem o limite.'); go('alunos.php'); }
     $status = $_POST['status'] ?? 'ATIVO';
     $observacoes = trim($_POST['observacoes_medicas'] ?? '');
+    if (mb_strlen($nome)>100 || mb_strlen($posicao)>30 || mb_strlen($observacoes)>65535) { flash('error','Nome (até 100 caracteres), posição (até 30) ou observações excedem o limite.'); go('alunos.php'); }
     $emailAluno = trim($_POST['email_acesso'] ?? '');
     $senhaAluno = (string) ($_POST['senha_acesso'] ?? '');
 
@@ -100,10 +102,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } elseif ($acesso) {
                 if (strlen($senhaAluno) < 6) throw new InvalidArgumentException('Informe uma senha de ao menos 6 caracteres para criar o primeiro acesso.');
-                $db->prepare('INSERT INTO TB_USUARIO (COD_ESCOLINHA,NOME,EMAIL,SENHA_HASH,PERFIL,ATIVO) VALUES (?,?,?,?,"ALUNO",1)')
-                    ->execute([$escolinha, $nome, $emailAluno, password_hash($senhaAluno, PASSWORD_DEFAULT)]);
+                $db->prepare('INSERT INTO TB_USUARIO (COD_ESCOLINHA,NOME,EMAIL,SENHA_HASH,PERFIL,ATIVO) VALUES (?,?,?,?,"ALUNO",?)')
+                    ->execute([$escolinha, $nome, $emailAluno, password_hash($senhaAluno, PASSWORD_DEFAULT), $status === 'ATIVO' ? 1 : 0]);
                 $db->prepare('UPDATE TB_ALUNO SET COD_USUARIO = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?')->execute([(int) $db->lastInsertId(), $id, $escolinha]);
             }
+        }
+        if ($action === 'update') {
+            $db->prepare('UPDATE TB_USUARIO SET ATIVO = ? WHERE COD_USUARIO = (SELECT COD_USUARIO FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?) AND PERFIL = "ALUNO"')
+                ->execute([$status === 'ATIVO' ? 1 : 0, $id, $escolinha]);
         }
         if ($action === 'update' && $status !== 'ATIVO') $db->prepare("UPDATE TB_MATRICULA SET STATUS='ENCERRADA' WHERE COD_ALUNO=? AND STATUS='ATIVA'")->execute([$id]);
         $db->commit();
@@ -167,7 +173,7 @@ $value = function ($field, $default = '') use ($edit) { return e($edit[$field] ?
         <button type="button" class="acao-rapida" data-url="camisas.php?mini=1" data-titulo="Camisas dos alunos"><span>👕</span>Camisas</button>
     </div>
 </div>
-<section class="lista-alunos"><div class="tabela-alunos"><table><thead><tr><th>Aluno</th><th>Responsável</th><th>Situação</th><th>Turmas</th><th>Ações</th></tr></thead><tbody><?php foreach ($lista as $aluno): ?><tr><td><?= e($aluno['NOME']) ?></td><td><?= e($aluno['RESPONSAVEL']) ?></td><td><?= e($aluno['STATUS']) ?></td><td><?= (int) $aluno['TURMAS_ATIVAS'] ?></td><td><button type="button" class="acao-tabela" data-url="alunos.php?mini=1&amp;editar=<?= (int) $aluno['COD_ALUNO'] ?>" data-titulo="Editar aluno">Editar</button><form method="post" onsubmit="return confirm('Excluir este aluno? As matrículas e presenças relacionadas serão removidas.');"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $aluno['COD_ALUNO'] ?>"><button>Excluir</button></form></td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="5">Nenhum aluno cadastrado.</td></tr><?php endif; ?></tbody></table></div></section>
+<section class="lista-alunos"><div class="tabela-alunos"><table><thead><tr><th>Aluno</th><th>Responsável</th><th>Situação</th><th>Turmas</th><th>Ações</th></tr></thead><tbody><?php foreach ($lista as $aluno): ?><tr><td><?= e($aluno['NOME']) ?></td><td><?= e($aluno['RESPONSAVEL']) ?></td><td><?= e($aluno['STATUS']) ?></td><td><?= (int) $aluno['TURMAS_ATIVAS'] ?></td><td><button type="button" class="acao-tabela" data-url="alunos.php?mini=1&amp;editar=<?= (int) $aluno['COD_ALUNO'] ?>" data-titulo="Editar aluno">Editar</button><form method="post" onsubmit="return confirm('Alunos com histórico não podem ser excluídos. O sistema bloqueará a exclusão e orientará a inativação do cadastro.');"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $aluno['COD_ALUNO'] ?>"><button>Excluir</button></form></td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="5">Nenhum aluno cadastrado.</td></tr><?php endif; ?></tbody></table></div></section>
 <dialog class="modal-cadastro" id="modalAlunos" aria-labelledby="tituloModalAlunos">
     <header class="modal-cabecalho"><h2 id="tituloModalAlunos">Alunos</h2><button type="button" class="fechar-modal" id="fecharModalAlunos" aria-label="Fechar">×</button></header>
     <iframe id="iframeAlunos" title="Cadastro de aluno ou gestão de camisas"></iframe>

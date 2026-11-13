@@ -15,6 +15,12 @@ function checkLogin() {
         header("Location: login.php");
         exit;
     }
+    require_once __DIR__ . '/../config/database.php';
+    $q = getDB()->prepare('SELECT ATIVO FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
+    $q->execute([$_SESSION['user_id'], $_SESSION['escolinha_id'] ?? 0]);
+    if ((int) $q->fetchColumn() !== 1) {
+        logoutUser();
+    }
 }
 
 /**

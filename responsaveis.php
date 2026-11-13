@@ -21,15 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         go('responsaveis.php');
     }
     $nome = trim($_POST['nome'] ?? '');
-    $cpf = preg_replace('/\D/', '', $_POST['cpf'] ?? '');
+    $cpfFormatado = cpfFormat($_POST['cpf'] ?? '');
     $telefone = trim($_POST['telefone'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $endereco = trim($_POST['endereco'] ?? '');
-    if ($nome === '' || strlen($cpf) !== 11 || ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL))) {
-        flash('error', 'Informe nome, CPF com 11 dígitos e e-mail válido quando preenchido.');
+    if ($nome === '' || $cpfFormatado === '' || ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL))) {
+        flash('error', 'Informe nome, CPF válido e e-mail válido quando preenchido.');
         go('responsaveis.php' . ($id ? '?editar=' . $id : ''));
     }
-    $cpfFormatado = substr($cpf, 0, 3) . '.' . substr($cpf, 3, 3) . '.' . substr($cpf, 6, 3) . '-' . substr($cpf, 9);
     try {
         if ($action === 'create') {
             $stmt = $db->prepare('INSERT INTO TB_RESPONSAVEL (COD_ESCOLINHA, NOME, CPF, TELEFONE, EMAIL, ENDERECO) VALUES (?, ?, ?, ?, ?, ?)');

@@ -151,6 +151,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if ($participou) $estatisticas[] = [(int) $alunoId, $titular, $participou, $gols, $assistencias];
         }
+        if ($golsCasa !== null && $golsCasa !== false) {
+            $golsIndividuais = array_sum(array_column($estatisticas, 3));
+            if ($golsIndividuais > $golsCasa) {
+                flash('error', 'Os gols individuais dos atletas não podem superar o placar da escolinha.');
+                go($retorno);
+            }
+        }
 
         try {
             $db->beginTransaction();

@@ -65,9 +65,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'delete') {
         $aulaExcluir = aulaDaEscolinha($db, $id, $escolinha, $professor);
         if ($aulaExcluir) {
+            try {
+                $db->prepare('DELETE FROM TB_AULA WHERE COD_AULA = ?')->execute([$id]);
+            } catch (PDOException $error) {
+                flash('error', 'Não foi possível excluir o treino. Verifique se existem registros vinculados.');
+                go('aulas.php');
+            }
             $destinatarios = notificacaoDestinatariosTurma($db, $escolinha, (int) $aulaExcluir['COD_TURMA']);
             notificacaoEnviar($db, $escolinha, $destinatarios, 'ALTERACAO_TREINO', 'Treino cancelado', 'O treino “' . $aulaExcluir['TEMA_TREINO'] . '” de ' . notificacaoDataTreino($aulaExcluir['DATA_AULA'], $aulaExcluir['HORARIO']) . ' foi cancelado.', 'calendario.php', (int) $_SESSION['user_id']);
-            $db->prepare('DELETE FROM TB_AULA WHERE COD_AULA = ?')->execute([$id]);
             flash('success', 'Aula excluída. As presenças foram removidas; as avaliações sem vínculo com a aula foram preservadas.');
         }
         go('aulas.php');
@@ -131,10 +136,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($tipo === '' && $aulaAtual['TIPO_TREINO'] === null) {
             $atributosJson = $aulaAtual['ATRIBUTOS_AVALIAVEIS_JSON'];
         }
-        $db->prepare(
+        try { $db->prepare(
             'UPDATE TB_AULA SET COD_TURMA = ?, DATA_AULA = ?, HORARIO = ?, TEMA_TREINO = ?, OBJETIVO = ?, EXERCICIOS = ?, TIPO_TREINO = ?,
              ATRIBUTOS_AVALIAVEIS_JSON = ?, OBSERVACAO = ? WHERE COD_AULA = ?'
-        )->execute([$turma, $data, $horario ?: null, $tema, $objetivo ?: null, $exercicios ?: null, $tipo ?: null, $atributosJson, $observacao ?: null, $id]);
+        )->execute([$turma, $data, $horario ?: null, $tema, $objetivo ?: null, $exercicios ?: null, $tipo ?: null, $atributosJson, $observacao ?: null, $id]); } catch (PDOException $e) { flash('error','Não foi possível atualizar o treino. Confira os campos e seus limites.'); go('aulas.php'); }
         $destinatarios = [];
         foreach (array_unique([(int) $aulaAtual['COD_TURMA'], $turma]) as $turmaNotificada) {
             $destinatarios = array_merge($destinatarios, notificacaoDestinatariosTurma($db, $escolinha, $turmaNotificada));

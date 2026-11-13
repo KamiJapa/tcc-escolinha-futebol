@@ -56,22 +56,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('error', $error->getMessage());
     } catch (PDOException $error) {
         error_log($error->getMessage());
-        flash('error','Não foi possível salvar. Verifique se a mensalidade deste aluno já existe nessa competência.');
+        flash('error', $error->getCode() === '23000'
+            ? 'A mensalidade deste aluno para esta competência já existe.'
+            : 'Não foi possível salvar o lançamento. Confira os dados e tente novamente.');
     }
     go('financeiro.php');
 }
 $edit = null;
-if (isset($_GET['editar'])) {
+if (is_string($_GET['editar'] ?? null) && ctype_digit($_GET['editar'])) {
     $q = $db->prepare("SELECT * FROM TB_FINANCEIRO WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=? AND STATUS='PENDENTE'");
     $q->execute([(int)$_GET['editar'],$escola]);
     $edit=$q->fetch();
     if (!$edit) { flash('error','Lançamento não disponível para edição.'); go('financeiro.php'); }
 }
-$mes = $_GET['mes'] ?? date('Y-m');
+$mes = is_string($_GET['mes'] ?? null) ? $_GET['mes'] : date('Y-m');
 if (!is_string($mes) || !validDate($mes . '-01')) $mes = date('Y-m');
 $inicio = $mes . '-01';
 $fim = date('Y-m-d', strtotime($inicio . ' +1 month'));
-$situacao = $_GET['situacao'] ?? '';
+$situacao = is_string($_GET['situacao'] ?? null) ? $_GET['situacao'] : '';
 if (!in_array($situacao, ['', 'PENDENTE','PAGO','CANCELADO','ATRASADO'], true)) $situacao = '';
 $q = $db->prepare('SELECT f.*,a.NOME AS ALUNO FROM TB_FINANCEIRO f LEFT JOIN TB_ALUNO a ON a.COD_ALUNO=f.COD_ALUNO AND a.COD_ESCOLINHA=f.COD_ESCOLINHA WHERE f.COD_ESCOLINHA=? AND f.VENCIMENTO>=? AND f.VENCIMENTO<? ORDER BY f.VENCIMENTO,f.COD_LANCAMENTO DESC');
 $q->execute([$escola,$inicio,$fim]);
@@ -108,6 +110,6 @@ pageStart('Financeiro');
 <div><?php actionButton($edit ? 'Salvar alterações' : 'Registrar lançamento'); ?></div></form></details>
 <div class="financeiro-tabela" tabindex="0" aria-label="Lançamentos financeiros"><table><thead><tr><th>Descrição / Aluno</th><th>Tipo</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
 <?php foreach ($lista as $item): ?><tr><td><?= e($item['DESCRICAO']) ?><br><small><?= e($item['ALUNO'] ?: 'Sem aluno vinculado') ?><?= $item['COMPETENCIA'] ? ' · '.e(date('m/Y',strtotime($item['COMPETENCIA']))) : '' ?></small></td><td><?= e($item['TIPO']) ?></td><td><?= e(date('d/m/Y',strtotime($item['VENCIMENTO']))) ?></td><td><?= reais((int)round((float)$item['VALOR']*100)) ?></td><td><?= $item['STATUS']==='PENDENTE' && $item['VENCIMENTO']<date('Y-m-d') ? 'ATRASADO' : e($item['STATUS']) ?><?php if ($item['DATA_PAGAMENTO']): ?><br><small>Baixa: <?= e(date('d/m/Y',strtotime($item['DATA_PAGAMENTO']))) ?></small><?php endif; ?></td><td>
-<?php if ($item['STATUS']!=='CANCELADO'): ?><form method="post" class="financeiro-baixa"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="id" value="<?= (int)$item['COD_LANCAMENTO'] ?>"><?php if ($item['STATUS']==='PENDENTE'): ?><a href="financeiro.php?editar=<?= (int)$item['COD_LANCAMENTO'] ?>">Editar</a><label>Data da baixa<input type="date" name="data_pagamento" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required></label><button name="acao" value="pagar">Registrar pagamento</button><button name="acao" value="cancelar" formnovalidate onclick="return confirm('Cancelar este lançamento?')">Cancelar</button><?php else: ?><button name="acao" value="reabrir" onclick="return confirm('Desfazer a baixa e tornar este lançamento pendente?')">Desfazer baixa</button><?php endif; ?></form><?php endif; ?>
+<form method="post" class="financeiro-baixa"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="id" value="<?= (int)$item['COD_LANCAMENTO'] ?>"><?php if ($item['STATUS']==='PENDENTE'): ?><a href="financeiro.php?editar=<?= (int)$item['COD_LANCAMENTO'] ?>">Editar</a><label>Data da baixa<input type="date" name="data_pagamento" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required></label><button name="acao" value="pagar">Registrar pagamento</button><button name="acao" value="cancelar" formnovalidate onclick="return confirm('Cancelar este lançamento?')">Cancelar</button><?php elseif ($item['STATUS']==='PAGO'): ?><button name="acao" value="reabrir" onclick="return confirm('Desfazer a baixa e tornar este lançamento pendente?')">Desfazer baixa</button><?php else: ?><input type="hidden" name="cancelado" value="1"><button name="acao" value="reabrir" onclick="return confirm('Reabrir este lançamento cancelado como pendente?')">Reabrir lançamento</button><?php endif; ?></form>
 </td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="6">Nenhum lançamento para estes filtros.</td></tr><?php endif; ?></tbody></table></div></div>
 <?php pageEnd(); ?>

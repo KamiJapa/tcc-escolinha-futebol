@@ -35,7 +35,7 @@ $fimGrade = (clone $fimMes)->modify('sunday this week');
 $mesAnterior = (clone $inicioMes)->modify('-1 month')->format('Y-m');
 $mesProximo = (clone $inicioMes)->modify('+1 month')->format('Y-m');
 $tipos = avaliacaoTiposTreino();
-$filtroTipo = (string) ($_GET['tipo'] ?? '');
+$filtroTipo = is_string($_GET['tipo'] ?? null) ? $_GET['tipo'] : '';
 if (!isset($tipos[$filtroTipo])) $filtroTipo = '';
 
 if ($perfil === 'RESPONSAVEL' || $perfil === 'ALUNO') {
@@ -60,7 +60,8 @@ if ($perfil === 'RESPONSAVEL' || $perfil === 'ALUNO') {
 }
 $turmas = $consulta->fetchAll();
 $idsTurmas = array_map(static function ($turma) { return (int) $turma['COD_TURMA']; }, $turmas);
-$filtroTurma = (int) ($_GET['turma'] ?? 0);
+$filtroTurma = filter_var($_GET['turma'] ?? 0, FILTER_VALIDATE_INT);
+$filtroTurma = $filtroTurma === false || $filtroTurma < 0 ? 0 : $filtroTurma;
 if ($filtroTurma && !in_array($filtroTurma, $idsTurmas, true)) $filtroTurma = 0;
 
 $sqlEventos =

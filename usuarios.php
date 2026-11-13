@@ -51,6 +51,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $anterior = $consulta->fetch();
             if (!$anterior) { flash('error', 'Usuário não encontrado.'); go('usuarios.php'); }
             if ($anterior['PERFIL'] === 'ALUNO') { flash('error', 'Gerencie o acesso do aluno pelo cadastro do atleta.'); go('usuarios.php'); }
+            if ($id === (int) $_SESSION['user_id'] && ($perfil !== $anterior['PERFIL'] || !$ativo)) {
+                flash('error', 'Mantenha seu próprio perfil e acesso ativo para não perder o controle administrativo.');
+                go('usuarios.php');
+            }
             if ($senha !== '') {
                 $db->prepare('UPDATE TB_USUARIO SET NOME=?,EMAIL=?,PERFIL=?,ATIVO=?,SENHA_HASH=? WHERE COD_USUARIO=? AND COD_ESCOLINHA=?')
                     ->execute([$nome, $email, $perfil, $ativo, password_hash($senha, PASSWORD_DEFAULT), $id, $escolinha]);
