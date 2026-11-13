@@ -44,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($acao === 'pagar' && (!validDate($data) || $data > date('Y-m-d'))) throw new InvalidArgumentException('Informe uma data de pagamento válida, até hoje.');
             $novo = ['pagar'=>'PAGO','reabrir'=>'PENDENTE','cancelar'=>'CANCELADO'][$acao];
             $anterior = ['pagar'=>'PENDENTE','reabrir'=>'PAGO','cancelar'=>'PENDENTE'][$acao];
+            if ($acao==='reabrir' && ($_POST['cancelado'] ?? '')==='1') $anterior='CANCELADO';
             $q = $db->prepare('UPDATE TB_FINANCEIRO SET STATUS=?,DATA_PAGAMENTO=? WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=? AND STATUS=?');
             $q->execute([$novo,$data,$id,$escola,$anterior]);
             if (!$q->rowCount()) throw new InvalidArgumentException('Lançamento não encontrado ou já atualizado. Recarregue a página.');

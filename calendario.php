@@ -25,7 +25,7 @@ if ($perfil === 'RESPONSAVEL') {
     $consultaAluno->execute([(int) $_SESSION['user_id'], $escolinha]);
     $alunoId = (int) $consultaAluno->fetchColumn();
 }
-$mesInformado = (string) ($_GET['mes'] ?? date('Y-m'));
+$mesInformado = is_string($_GET['mes'] ?? null) ? $_GET['mes'] : date('Y-m');
 $mesValido = DateTime::createFromFormat('!Y-m', $mesInformado);
 $mesAtual = $mesValido && $mesValido->format('Y-m') === $mesInformado ? $mesValido : new DateTime('first day of this month');
 $inicioMes = (clone $mesAtual)->modify('first day of this month');

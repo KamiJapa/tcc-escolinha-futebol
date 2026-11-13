@@ -7,7 +7,7 @@ $db = getDB();
 $escolinha = currentEscolinhaId();
 $usuario = (int) $_SESSION['user_id'];
 $filtros = ['todas' => null, 'nao-lidas' => 0, 'lidas' => 1];
-$filtro = $_GET['filtro'] ?? 'todas';
+$filtro = is_string($_GET['filtro'] ?? null) ? $_GET['filtro'] : 'todas';
 if (!isset($filtros[$filtro])) $filtro = 'todas';
 $urlRetorno = 'notificacoes.php?filtro=' . rawurlencode($filtro);
 

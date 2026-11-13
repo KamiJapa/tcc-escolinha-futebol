@@ -28,7 +28,7 @@ function buscarDestaquesSemanais($db, $escolinha, $perfil, $usuario, $responsave
          FROM TB_AVALIACAO av
          JOIN TB_ALUNO al ON al.COD_ALUNO = av.COD_ALUNO AND al.COD_ESCOLINHA = ?
          JOIN TB_AULA au ON au.COD_AULA = av.COD_AULA
-         JOIN TB_TURMA t ON t.COD_TURMA = au.COD_TURMA AND t.COD_ESCOLINHA = al.COD_ESCOLINHA
+         JOIN TB_TURMA t ON t.COD_TURMA = au.COD_TURMA
          WHERE av.DATA_AVALIACAO >= ? AND av.DATA_AVALIACAO < ? AND av.NOTA_GERAL IS NOT NULL' . $filtroTurma . '
          GROUP BY al.COD_ALUNO, al.NOME, al.NUMERO_CAMISA, t.COD_TURMA, t.NOME, t.FAIXA_ETARIA
          HAVING MEDIA_ATUAL IS NOT NULL AND MEDIA_ANTERIOR IS NOT NULL'

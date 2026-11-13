@@ -3,17 +3,18 @@ require_once __DIR__ . '/includes/layout.php'; require_once __DIR__ . '/config/d
 checkRole(['ADMIN', 'SECRETARIA']); $db = getDB(); $escolinha = currentEscolinhaId(); $edit = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf(); $action = $_POST['action'] ?? ''; $id = (int) ($_POST['id'] ?? 0);
-    if ($action === 'delete') { try { $db->prepare('DELETE FROM TB_TURMA WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?')->execute([$id, $escolinha]); flash('success', 'Turma excluída.'); } catch (PDOException $e) { flash('error', 'Não foi possível excluir esta turma porque há registros relacionados.'); } go('turmas.php'); }
+    if ($action === 'delete') { $q=$db->prepare('SELECT (SELECT COUNT(*) FROM TB_MATRICULA WHERE COD_TURMA=?)+(SELECT COUNT(*) FROM TB_AULA WHERE COD_TURMA=?)+(SELECT COUNT(*) FROM TB_JOGO WHERE COD_TURMA=?)');$q->execute([$id,$id,$id]); if($q->fetchColumn()){flash('error','Turma possui histórico vinculado. Desative-a pelo campo Turma ativa.');go('turmas.php');} try { $db->prepare('DELETE FROM TB_TURMA WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?')->execute([$id, $escolinha]); flash('success', 'Turma excluída.'); } catch (PDOException $e) { flash('error', 'Não foi possível excluir a turma. Desative-a pelo campo Turma ativa.'); } go('turmas.php'); }
     $nome = trim($_POST['nome'] ?? ''); $faixa = trim($_POST['faixa_etaria'] ?? ''); $dias = trim($_POST['dias_treino'] ?? ''); $horario = trim($_POST['horario'] ?? ''); $capacidade = (int) ($_POST['capacidade'] ?? 0); $professor = (int) ($_POST['cod_professor'] ?? 0); $ativa = isset($_POST['ativa']) ? 1 : 0;
-    if ($nome === '' || $faixa === '' || $dias === '' || $horario === '' || $capacidade < 1) { flash('error', 'Preencha todos os campos e informe capacidade maior que zero.'); go('turmas.php' . ($id ? '?editar=' . $id : '')); }
+    if (mb_strlen($nome)>50 || mb_strlen($faixa)>30 || mb_strlen($dias)>100 || mb_strlen($horario)>50 || $capacidade>200 || $nome === '' || $faixa === '' || $dias === '' || $horario === '' || $capacidade < 1) { flash('error', 'Preencha todos os campos e informe capacidade maior que zero.'); go('turmas.php' . ($id ? '?editar=' . $id : '')); }
     if ($professor) { $ok = $db->prepare("SELECT 1 FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = 'PROFESSOR' AND ATIVO=1"); $ok->execute([$professor, $escolinha]); if (!$ok->fetchColumn()) { flash('error', 'Professor inválido.'); go('turmas.php'); } }
     if ($action === 'update') {
         $q = $db->prepare("SELECT COUNT(*) FROM TB_MATRICULA WHERE COD_TURMA=? AND STATUS='ATIVA'");
         $q->execute([$id]);
         if ((int) $q->fetchColumn() > $capacidade) { flash('error', 'A capacidade não pode ser menor que o número de matrículas ativas.'); go('turmas.php'); }
     }
+    try {
     if ($action === 'create') { $db->prepare('INSERT INTO TB_TURMA (COD_ESCOLINHA, COD_PROFESSOR, NOME, FAIXA_ETARIA, DIAS_TREINO, HORARIO, CAPACIDADE, ATIVA) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')->execute([$escolinha, $professor ?: null, $nome, $faixa, $dias, $horario, $capacidade, $ativa]); flash('success', 'Turma cadastrada.'); }
-    if ($action === 'update') { $db->prepare('UPDATE TB_TURMA SET COD_PROFESSOR = ?, NOME = ?, FAIXA_ETARIA = ?, DIAS_TREINO = ?, HORARIO = ?, CAPACIDADE = ?, ATIVA = ? WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?')->execute([$professor ?: null, $nome, $faixa, $dias, $horario, $capacidade, $ativa, $id, $escolinha]); flash('success', 'Turma atualizada.'); }
+    if ($action === 'update') { $db->prepare('UPDATE TB_TURMA SET COD_PROFESSOR = ?, NOME = ?, FAIXA_ETARIA = ?, DIAS_TREINO = ?, HORARIO = ?, CAPACIDADE = ?, ATIVA = ? WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?')->execute([$professor ?: null, $nome, $faixa, $dias, $horario, $capacidade, $ativa, $id, $escolinha]); flash('success', 'Turma atualizada.'); } } catch (PDOException $e) { flash('error','Não foi possível salvar a turma. Confira os campos e seus limites.'); }
     go('turmas.php');
 }
 if (isset($_GET['editar'])) { $q = $db->prepare('SELECT * FROM TB_TURMA WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?'); $q->execute([(int) $_GET['editar'], $escolinha]); $edit = $q->fetch(); if (!$edit) { flash('error', 'Turma não encontrada.'); go('turmas.php'); } }

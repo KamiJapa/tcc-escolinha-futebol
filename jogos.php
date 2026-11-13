@@ -152,11 +152,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($participou) $estatisticas[] = [(int) $alunoId, $titular, $participou, $gols, $assistencias];
         }
 
-        if (!$resultadoVazio && (array_sum(array_column($estatisticas, 3)) > $golsCasa || array_sum(array_column($estatisticas, 4)) > $golsCasa)) {
-            flash('error', 'Os gols e assistências individuais não podem superar os gols da escolinha.');
-            go($retorno);
-        }
-
         try {
             $db->beginTransaction();
             if ($id) {

@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $destinatarios = notificacaoDestinatariosTurma($db, $escolinha, (int) $aulaExcluir['COD_TURMA']);
             notificacaoEnviar($db, $escolinha, $destinatarios, 'ALTERACAO_TREINO', 'Treino cancelado', 'O treino “' . $aulaExcluir['TEMA_TREINO'] . '” de ' . notificacaoDataTreino($aulaExcluir['DATA_AULA'], $aulaExcluir['HORARIO']) . ' foi cancelado.', 'calendario.php', (int) $_SESSION['user_id']);
             $db->prepare('DELETE FROM TB_AULA WHERE COD_AULA = ?')->execute([$id]);
-            flash('success', 'Aula excluída. As avaliações vinculadas serão preservadas no histórico.');
+            flash('success', 'Aula excluída. As presenças foram removidas; as avaliações sem vínculo com a aula foram preservadas.');
         }
         go('aulas.php');
     }
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $dataValida = DateTime::createFromFormat('!Y-m-d', (string) $data);
     $horarioValido = $horario === '' || preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $horario);
-    if (!$consulta->fetchColumn() || !$dataValida || $dataValida->format('Y-m-d') !== $data || !$tema || !$tipoValido || !$horarioValido
+    if (mb_strlen($tema)>100 || mb_strlen($objetivo)>65535 || mb_strlen($exercicios)>65535 || mb_strlen($observacao)>65535 || !$consulta->fetchColumn() || !$dataValida || $dataValida->format('Y-m-d') !== $data || !$tema || !$tipoValido || !$horarioValido
         || ($acao === 'create' && $tipo === '')
         || ($tipo === 'PERSONALIZADO' && !$customizados)) {
         flash('error', 'Revise turma, data, tema e tipo do treino. Treinos personalizados precisam de ao menos um atributo.');
@@ -120,13 +120,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $atributosJson = $tipo === 'PERSONALIZADO' ? json_encode($customizados, JSON_UNESCAPED_UNICODE) : null;
     if ($acao === 'create') {
-        $db->prepare(
+        try { $db->prepare(
             'INSERT INTO TB_AULA (COD_TURMA, DATA_AULA, HORARIO, TEMA_TREINO, OBJETIVO, EXERCICIOS, TIPO_TREINO, ATRIBUTOS_AVALIAVEIS_JSON, OBSERVACAO)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         )->execute([$turma, $data, $horario ?: null, $tema, $objetivo ?: null, $exercicios ?: null, $tipo, $atributosJson, $observacao ?: null]);
         $id = (int) $db->lastInsertId();
         notificacaoEnviar($db, $escolinha, notificacaoDestinatariosTurma($db, $escolinha, $turma), 'NOVO_TREINO', 'Novo treino', 'Foi marcado o treino “' . $tema . '” para ' . notificacaoDataTreino($data, $horario ?: null) . '.', 'calendario.php', (int) $_SESSION['user_id']);
-        flash('success', 'Treino cadastrado.');
+        flash('success', 'Treino cadastrado.'); } catch (PDOException $e) { flash('error','Não foi possível cadastrar o treino. Confira os campos e seus limites.'); go('aulas.php'); }
     } elseif ($acao === 'update') {
         if ($tipo === '' && $aulaAtual['TIPO_TREINO'] === null) {
             $atributosJson = $aulaAtual['ATRIBUTOS_AVALIAVEIS_JSON'];

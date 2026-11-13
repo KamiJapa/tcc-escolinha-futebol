@@ -60,6 +60,9 @@ function validDate($value) {
 
 function cpfFormat($value) {
     $digits = preg_replace('/\D/', '', (string) $value);
-    if (strlen($digits) !== 11) return '';
+    if (strlen($digits) !== 11 || preg_match('/^(\d)\1{10}$/', $digits)) return '';
+    $sum=0; for($i=0;$i<9;$i++) $sum+=(int)$digits[$i]*(10-$i); $d1=($sum*10)%11; if($d1===10)$d1=0;
+    $sum=0; for($i=0;$i<10;$i++) $sum+=(int)$digits[$i]*(11-$i); $d2=($sum*10)%11; if($d2===10)$d2=0;
+    if((int)$digits[9]!==$d1 || (int)$digits[10]!==$d2) return '';
     return substr($digits, 0, 3) . '.' . substr($digits, 3, 3) . '.' . substr($digits, 6, 3) . '-' . substr($digits, 9);
 }

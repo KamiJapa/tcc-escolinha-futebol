@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nome = trim($_POST['nome'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $cpf = cpfFormat($_POST['cpf'] ?? '');
+    if ($cpf === '') { flash('error','Informe um CPF válido com dígitos verificadores corretos.'); go('login.php'); }
     $telefone = trim($_POST['telefone'] ?? '');
     $senha = $_POST['senha'] ?? '';
     $confirmacao = $_POST['confirmacao'] ?? '';

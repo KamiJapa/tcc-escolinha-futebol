@@ -109,7 +109,7 @@ if ($atletaSelecionado) {
 }
 
 $semanasDisponiveis = array_keys($semanas);
-$semanaSolicitada = (string) ($_GET['semana'] ?? ($semanasDisponiveis[0] ?? (new DateTimeImmutable())->modify('monday this week')->format('Y-m-d')));
+$semanaSolicitada = (is_string($_GET['semana'] ?? null) ? $_GET['semana'] : ($semanasDisponiveis[0] ?? (new DateTimeImmutable())->modify('monday this week')->format('Y-m-d')));
 $dataSemanaSolicitada = DateTimeImmutable::createFromFormat('!Y-m-d', $semanaSolicitada);
 $semanaSelecionada = $dataSemanaSolicitada && $dataSemanaSolicitada->format('Y-m-d') === $semanaSolicitada && isset($semanas[$semanaSolicitada])
     ? $semanaSolicitada

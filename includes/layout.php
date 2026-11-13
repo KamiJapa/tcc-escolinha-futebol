@@ -2,7 +2,6 @@
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/notificacoes_helpers.php';
-checkLogin();
 
 function menuItem($url, $label, $icon, $roles, $activeUrls = [], $badge = null, $section = null) {
     if (!hasRole($roles)) {
@@ -68,7 +67,7 @@ function pageStart($title) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?> - GestorFC</title>
-    <?php if ($title !== 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/tailwind.css"><?php endif; ?>
+    <?php if ($title !== 'Meus filhos'): ?><script src="https://cdn.tailwindcss.com"></script><?php endif; ?>
     <link rel="stylesheet" href="assets/css/style.css">
     <?php if ($title === 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/responsavel.css"><?php endif; ?>
 </head>
@@ -116,7 +115,7 @@ function pageStart($title) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?> - GestorFC</title>
-    <?php if ($title !== 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/tailwind.css"><?php endif; ?>
+    <?php if ($title !== 'Meus filhos'): ?><script src="https://cdn.tailwindcss.com"></script><?php endif; ?>
     <link rel="stylesheet" href="assets/css/style.css">
     <?php if ($title === 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/responsavel.css"><?php endif; ?>
 </head>
@@ -158,7 +157,6 @@ function pageStart($title) {
                     <?php menuItem('turmas.php', 'Turmas', 'teams', ['ADMIN', 'SECRETARIA'], ['turmas.php']); ?>
                     <?php menuItem('matriculas.php', 'Matrículas', 'enrollments', ['ADMIN', 'SECRETARIA'], ['matriculas.php']); ?>
                 <?php endif; ?>
-                <?php menuItem('financeiro.php', 'Financeiro', 'enrollments', ['ADMIN', 'SECRETARIA']); ?>
                 <?php menuItem('usuarios.php', 'Usuários', 'settings', ['ADMIN'], ['usuarios.php']); ?>
                 <?php menuItem('area_responsavel.php', 'Meus filhos', 'students', ['RESPONSAVEL'], ['area_responsavel.php']); ?>
             </nav>
@@ -203,7 +201,6 @@ function pageStart($title) {
 
                     modalRecurso.addEventListener('close', function () {
                         iframeRecurso.src = 'about:blank';
-                        window.location.reload();
                     });
                 </script>
             <?php endif; ?>

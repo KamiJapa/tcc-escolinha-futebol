@@ -15,6 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete') {
         $stmt = $db->prepare('SELECT COD_USUARIO FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
         $stmt->execute([$id, $escolinha]);
+        $vinculos = $db->prepare('SELECT (SELECT COUNT(*) FROM TB_MATRICULA WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_PRESENCA WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_AVALIACAO WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_JOGO_ATLETA WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_META_ATLETA WHERE COD_ALUNO=?) + (SELECT COUNT(*) FROM TB_FINANCEIRO WHERE COD_ALUNO=?)');
+        $vinculos->execute(array_fill(0,6,$id));
+        if ($vinculos->fetchColumn()) { flash('error', 'Este aluno possui histórico vinculado. Inative o cadastro para preservá-lo.'); go('alunos.php'); }
         $usuarioAluno = (int) $stmt->fetchColumn();
         try {
         $db->beginTransaction();
@@ -36,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nascimento = $_POST['data_nascimento'] ?? '';
     $responsavel = (int) ($_POST['cod_responsavel'] ?? 0);
     $posicao = trim($_POST['posicao'] ?? '');
+    if (mb_strlen($nome)>100 || mb_strlen($posicao)>30 || mb_strlen($observacoes)>65535) { flash('error','Nome (até 100 caracteres), posição (até 30) ou observações excedem o limite.'); go('alunos.php'); }
     $status = $_POST['status'] ?? 'ATIVO';
     $observacoes = trim($_POST['observacoes_medicas'] ?? '');
     $emailAluno = trim($_POST['email_acesso'] ?? '');
@@ -88,11 +92,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $acesso = $stmt->fetch();
             if ($acesso && $acesso['COD_USUARIO']) {
                 if ($senhaAluno !== '') {
-                    $db->prepare('UPDATE TB_USUARIO SET NOME = ?, EMAIL = ?, SENHA_HASH = ?, ATIVO = 1 WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = "ALUNO"')
-                        ->execute([$nome, $emailAluno, password_hash($senhaAluno, PASSWORD_DEFAULT), $acesso['COD_USUARIO'], $escolinha]);
+                    $db->prepare('UPDATE TB_USUARIO SET NOME = ?, EMAIL = ?, SENHA_HASH = ?, ATIVO = ? WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = "ALUNO"')
+                        ->execute([$nome, $emailAluno, password_hash($senhaAluno, PASSWORD_DEFAULT), $status === 'ATIVO' ? 1 : 0, $acesso['COD_USUARIO'], $escolinha]);
                 } else {
-                    $db->prepare('UPDATE TB_USUARIO SET NOME = ?, EMAIL = ?, ATIVO = 1 WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = "ALUNO"')
-                        ->execute([$nome, $emailAluno, $acesso['COD_USUARIO'], $escolinha]);
+                    $db->prepare('UPDATE TB_USUARIO SET NOME = ?, EMAIL = ?, ATIVO = ? WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND PERFIL = "ALUNO"')
+                        ->execute([$nome, $emailAluno, $status === 'ATIVO' ? 1 : 0, $acesso['COD_USUARIO'], $escolinha]);
                 }
             } elseif ($acesso) {
                 if (strlen($senhaAluno) < 6) throw new InvalidArgumentException('Informe uma senha de ao menos 6 caracteres para criar o primeiro acesso.');
@@ -101,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->prepare('UPDATE TB_ALUNO SET COD_USUARIO = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?')->execute([(int) $db->lastInsertId(), $id, $escolinha]);
             }
         }
+        if ($action === 'update' && $status !== 'ATIVO') $db->prepare("UPDATE TB_MATRICULA SET STATUS='ENCERRADA' WHERE COD_ALUNO=? AND STATUS='ATIVA'")->execute([$id]);
         $db->commit();
         flash('success', $action === 'create' ? 'Aluno cadastrado. Agora faça a matrícula em uma turma.' : 'Dados do aluno atualizados.');
     } catch (InvalidArgumentException $e) {
@@ -109,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         go('alunos.php' . ($id ? '?editar=' . $id : ''));
     } catch (PDOException $e) {
         if ($db->inTransaction()) $db->rollBack();
-        flash('error', 'Não foi possível salvar o acesso. Verifique se o e-mail já está em uso.');
+        flash('error', 'Não foi possível salvar os dados ou o acesso. Verifique os campos e se o e-mail já está em uso.');
         go('alunos.php' . ($id ? '?editar=' . $id : ''));
     }
     go('alunos.php');

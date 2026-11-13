@@ -3,8 +3,6 @@
 
 // Start the session if it hasn't been started already
 if (session_status() === PHP_SESSION_NONE) {
-    ini_set('session.use_strict_mode', '1');
-    session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off']);
     session_start();
 }
 
@@ -13,22 +11,6 @@ if (session_status() === PHP_SESSION_NONE) {
  * Redirects to login page if not authenticated.
  */
 function checkLogin() {
-    static $checked = false;
-    if (isset($_SESSION['user_id']) && !$checked) {
-        require_once __DIR__ . '/../config/database.php';
-        $q = getDB()->prepare('SELECT NOME, EMAIL, PERFIL, COD_ESCOLINHA FROM TB_USUARIO WHERE COD_USUARIO = ? AND ATIVO = 1');
-        $q->execute([$_SESSION['user_id']]);
-        $user = $q->fetch();
-        if (!$user) {
-            $_SESSION = [];
-        } else {
-            $_SESSION['username'] = $user['NOME'];
-            $_SESSION['user_email'] = $user['EMAIL'];
-            $_SESSION['user_role'] = $user['PERFIL'];
-            $_SESSION['escolinha_id'] = $user['COD_ESCOLINHA'];
-        }
-        $checked = true;
-    }
     if (!isset($_SESSION['user_id'])) {
         header("Location: login.php");
         exit;
@@ -51,7 +33,7 @@ function checkRole($allowed_roles = []) {
     // Check if the user's role is in the list of allowed roles
     if (!isset($_SESSION['user_role']) || !in_array($_SESSION['user_role'], $allowed_roles)) {
         header("HTTP/1.1 403 Forbidden");
-        die('Acesso não autorizado para este perfil.');
+        die("403 Forbidden - You do not have permission to access this page.");
     }
 }
 
@@ -75,7 +57,6 @@ function loginUser($email, $password) {
         // Prevent session fixation
         session_regenerate_id(true);
         
-        $_SESSION = [];
         $_SESSION['user_id'] = $user['COD_USUARIO'];
         $_SESSION['username'] = $user['NOME'];
         $_SESSION['user_email'] = $user['EMAIL'];
