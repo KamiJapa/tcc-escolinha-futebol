@@ -16,18 +16,18 @@ $telefone = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf();
-    $nome = trim($_POST['nome'] ?? '');
-    $email = trim($_POST['email'] ?? '');
+    $nome = trim(postString('nome'));
+    $email = trim(postString('email'));
     $cpf = cpfFormat($_POST['cpf'] ?? '');
     if ($cpf === '') { flash('error','Informe um CPF válido com dígitos verificadores corretos.'); go('login.php'); }
-    $telefone = trim($_POST['telefone'] ?? '');
-    $senha = $_POST['senha'] ?? '';
-    $confirmacao = $_POST['confirmacao'] ?? '';
+    $telefone = trim(postString('telefone'));
+    $senha = postString('senha');
+    $confirmacao = postString('confirmacao');
 
-    if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $cpf === '') {
+    if ($nome === '' || mb_strlen($nome) > 100 || strlen($email) > 100 || mb_strlen($telefone) > 20 || !filter_var($email, FILTER_VALIDATE_EMAIL) || $cpf === '') {
         $erro = 'Preencha o nome, um e-mail válido e o CPF.';
-    } elseif (strlen($senha) < 6) {
-        $erro = 'A senha precisa ter pelo menos 6 caracteres.';
+    } elseif (strlen($senha) < 6 || strlen($senha) > 72 || strpos($senha, "\0") !== false) {
+        $erro = 'Informe uma senha válida de 6 a 72 bytes.';
     } elseif ($senha !== $confirmacao) {
         $erro = 'As senhas digitadas são diferentes.';
     } else {
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($e->getCode() === '23000') {
                 $erro = 'Este e-mail ou CPF já está cadastrado.';
             } else {
-                error_log('Falha no cadastro: ' . $e->getMessage());
+                error_log('GestorFC: falha ao gravar o cadastro.');
                 $erro = 'Não foi possível concluir o cadastro. Verifique o banco de dados.';
             }
         } catch (RuntimeException $e) {

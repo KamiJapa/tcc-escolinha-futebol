@@ -366,7 +366,7 @@ pageStart('Dashboard estratégico');
             <div class="dashboard-card-topline"><span class="dashboard-card-label">DESEMPENHO GERAL</span><span class="desempenho-icone" aria-hidden="true">↗</span></div>
             <?php if ($desempenhoMedio !== null): ?>
                 <div class="desempenho-valor"><?= e(number_format($desempenhoMedio, 1, ',', '.')) ?><small>/ 10</small></div>
-                <div class="desempenho-barra" role="img" aria-label="Média de <?= e(number_format($desempenhoMedio, 1, ',', '.')) ?> de 10"><span style="width: <?= e(min(100, max(0, $desempenhoMedio * 10))) ?>%"></span></div>
+                <div class="desempenho-barra" role="img" aria-label="Média de <?= e(number_format($desempenhoMedio, 1, ',', '.')) ?> de 10"><span data-chart-width="<?= e(min(100, max(0, $desempenhoMedio * 10))) ?>"></span></div>
                 <p class="desempenho-legenda">Média das avaliações registradas</p>
                 <div class="desempenho-total"><span>Avaliações no sistema</span><strong><?= (int) $totalAvaliacoes ?></strong></div>
             <?php else: ?>
@@ -382,7 +382,7 @@ pageStart('Dashboard estratégico');
                 <article class="resumo-metrica"><span class="metrica-simbolo turmas" aria-hidden="true">⌘</span><div><strong><?= (int) $totalTurmas ?></strong><span>Turmas ativas</span></div></article>
                 <article class="resumo-metrica"><span class="metrica-simbolo treinos" aria-hidden="true">◷</span><div><strong><?= (int) $totalTreinos ?></strong><span>Treinos dados</span></div></article>
             </div>
-            <div class="resumo-presenca"><div><span>Presença média</span><strong><?= $presencaMedia === null ? '—' : e(number_format($presencaMedia, 1, ',', '.') . '%') ?></strong></div><?php if ($presencaMedia !== null): ?><div class="resumo-presenca-barra" role="img" aria-label="Presença média de <?= e(number_format($presencaMedia, 1, ',', '.')) ?> por cento"><span style="width: <?= e(min(100, max(0, $presencaMedia))) ?>%"></span></div><?php else: ?><p>As chamadas ainda não têm registros.</p><?php endif; ?></div>
+            <div class="resumo-presenca"><div><span>Presença média</span><strong><?= $presencaMedia === null ? '—' : e(number_format($presencaMedia, 1, ',', '.') . '%') ?></strong></div><?php if ($presencaMedia !== null): ?><div class="resumo-presenca-barra" role="img" aria-label="Presença média de <?= e(number_format($presencaMedia, 1, ',', '.')) ?> por cento"><span data-chart-width="<?= e(min(100, max(0, $presencaMedia))) ?>"></span></div><?php else: ?><p>As chamadas ainda não têm registros.</p><?php endif; ?></div>
         </section>
 
         <section class="dashboard-card semana-card">
@@ -393,9 +393,9 @@ pageStart('Dashboard estratégico');
                 <div class="semana-item"><span class="semana-dot violeta"></span><div><strong><?= (int) $avaliacoesNestaSemana ?></strong><span>Avaliações realizadas</span></div><small>esta semana</small></div>
             </div>
             <div class="mini-grafico-semana" role="img" aria-label="Comparativo de presença entre a semana atual e a anterior">
-                <div class="grafico-coluna"><span style="height: <?= $percentualSemana === null ? '4' : e(max(4, $percentualSemana)) ?>%"></span><small>Esta semana</small></div>
+                <div class="grafico-coluna"><span data-chart-height="<?= $percentualSemana === null ? '4' : e(max(4, $percentualSemana)) ?>"></span><small>Esta semana</small></div>
                 <div class="grafico-eixo"></div>
-                <div class="grafico-coluna anterior"><span style="height: <?= $percentualSemanaAnterior === null ? '4' : e(max(4, $percentualSemanaAnterior)) ?>%"></span><small>Semana anterior</small></div>
+                <div class="grafico-coluna anterior"><span data-chart-height="<?= $percentualSemanaAnterior === null ? '4' : e(max(4, $percentualSemanaAnterior)) ?>"></span><small>Semana anterior</small></div>
                 <div class="grafico-legenda"><i></i><?= $percentualSemana === null ? 'Sem dados de presença nesta semana' : e(number_format($percentualSemana, 1, ',', '.') . '% nesta semana') ?></div>
             </div>
         </section>
@@ -453,7 +453,7 @@ pageStart('Dashboard estratégico');
             <header class="modal-cabecalho"><h2 id="tituloModal">Cadastro</h2><button type="button" class="fechar-modal" id="fecharModal" aria-label="Fechar">×</button></header>
             <iframe id="conteudoModal" title="Formulário de cadastro"></iframe>
         </dialog>
-        <script>
+        <script nonce="<?= cspNonce() ?>">
             const modal = document.getElementById('modalCadastro');
             const iframe = document.getElementById('conteudoModal');
             const tituloModal = document.getElementById('tituloModal');

@@ -152,7 +152,7 @@ pageStart('Calendário');
 
     <dialog class="calendario-dialog" id="detalhesTreino" aria-labelledby="detalheTitulo"><div class="calendario-dialog-inner"><button class="calendario-dialog-fechar" id="fecharDetalheTreino" type="button" aria-label="Fechar detalhes">×</button><p class="calendario-kicker"><span></span><span id="detalheTipo"></span></p><h2 id="detalheTitulo"></h2><div class="calendario-dialog-meta"><span id="detalheData"></span><span id="detalheHorario"></span><span id="detalheTurma"></span><span id="detalheCategoria"></span><span id="detalheProfessor"></span></div><section><h3>Objetivo</h3><p id="detalheObjetivo"></p></section><section><h3>Exercícios e aquecimento</h3><p id="detalheExercicios"></p></section><section><h3>Observações</h3><p id="detalheObservacao"></p></section></div></dialog>
 </div>
-<script>
+<script nonce="<?= cspNonce() ?>">
 (function () {
     'use strict';
     const dialog = document.getElementById('detalhesTreino');

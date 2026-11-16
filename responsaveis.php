@@ -8,8 +8,19 @@ $edit = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf();
+    foreach (['nome', 'cpf', 'telefone', 'email', 'endereco'] as $campo) {
+        if (isset($_POST[$campo]) && !is_string($_POST[$campo])) {
+            flash('error', 'Revise os campos informados.');
+            go('responsaveis.php');
+        }
+    }
+
     $action = $_POST['action'] ?? '';
-    $id = (int) ($_POST['id'] ?? 0);
+    $id = (positiveId($_POST['id'] ?? null) ?? 0);
+    if (!in_array($action, ['create', 'update', 'delete'], true) || (in_array($action, ['update', 'delete'], true) && !$id)) {
+        flash('error', 'Operação ou identificador inválido.');
+        go('responsaveis.php');
+    }
     if ($action === 'delete') {
         try {
             $stmt = $db->prepare('DELETE FROM TB_RESPONSAVEL WHERE COD_RESPONSAVEL = ? AND COD_ESCOLINHA = ?');
@@ -25,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $telefone = trim($_POST['telefone'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $endereco = trim($_POST['endereco'] ?? '');
-    if ($nome === '' || $cpfFormatado === '' || ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL))) {
+    if ($nome === '' || mb_strlen($nome) > 100 || mb_strlen($telefone) > 20 || strlen($email) > 100 || mb_strlen($endereco) > 255 || $cpfFormatado === '' || ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL))) {
         flash('error', 'Informe nome, CPF válido e e-mail válido quando preenchido.');
         go('responsaveis.php' . ($id ? '?editar=' . $id : ''));
     }
@@ -45,8 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     go('responsaveis.php');
 }
 if (isset($_GET['editar'])) {
+    $editId = positiveId($_GET['editar']);
+    if (!$editId) { flash('error', 'Responsável inválido.'); go('responsaveis.php'); }
     $stmt = $db->prepare('SELECT * FROM TB_RESPONSAVEL WHERE COD_RESPONSAVEL = ? AND COD_ESCOLINHA = ?');
-    $stmt->execute([(int) $_GET['editar'], $escolinha]);
+    $stmt->execute([$editId, $escolinha]);
     $edit = $stmt->fetch();
     if (!$edit) { flash('error', 'Responsável não encontrado.'); go('responsaveis.php'); }
 }
@@ -57,5 +70,5 @@ pageStart('Responsáveis');
 $v = function ($field) use ($edit) { return e($edit[$field] ?? ''); };
 ?>
 <section><h2><?= $edit ? 'Editar responsável' : 'Novo responsável' ?></h2><form method="post"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="<?= $edit ? 'update' : 'create' ?>"><?php if ($edit): ?><input type="hidden" name="id" value="<?= (int) $edit['COD_RESPONSAVEL'] ?>"><?php endif; ?><label>Nome completo<input required name="nome" value="<?= $v('NOME') ?>"></label><label>CPF<input required name="cpf" maxlength="14" value="<?= $v('CPF') ?>"></label><label>Telefone<input name="telefone" value="<?= $v('TELEFONE') ?>"></label><label>E-mail<input type="email" name="email" value="<?= $v('EMAIL') ?>"></label><label>Endereço<input name="endereco" value="<?= $v('ENDERECO') ?>"></label><div><?php actionButton($edit ? 'Salvar alterações' : 'Cadastrar responsável'); ?><?php if ($edit): ?><a href="responsaveis.php">Cancelar</a><?php endif; ?></div></form></section>
-<section><div><table><thead><tr><th>Responsável</th><th>CPF</th><th>Contato</th><th>Alunos</th><th>Ações</th></tr></thead><tbody><?php foreach ($lista as $r): ?><tr><td><?= e($r['NOME']) ?></td><td><?= e($r['CPF']) ?></td><td><?= e($r['TELEFONE']) ?><br><?= e($r['EMAIL']) ?></td><td><?= (int) $r['TOTAL_ALUNOS'] ?></td><td><button type="button" class="acao-tabela" data-modal-url="responsaveis.php?mini=1&amp;editar=<?= (int) $r['COD_RESPONSAVEL'] ?>" data-modal-titulo="Editar responsável">Editar</button><form method="post" onsubmit="return confirm('Excluir este responsável?');"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $r['COD_RESPONSAVEL'] ?>"><button>Excluir</button></form></td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="5">Nenhum responsável cadastrado.</td></tr><?php endif; ?></tbody></table></div></section>
+<section><div><table><thead><tr><th>Responsável</th><th>CPF</th><th>Contato</th><th>Alunos</th><th>Ações</th></tr></thead><tbody><?php foreach ($lista as $r): ?><tr><td><?= e($r['NOME']) ?></td><td><?= e($r['CPF']) ?></td><td><?= e($r['TELEFONE']) ?><br><?= e($r['EMAIL']) ?></td><td><?= (int) $r['TOTAL_ALUNOS'] ?></td><td><button type="button" class="acao-tabela" data-modal-url="responsaveis.php?mini=1&amp;editar=<?= (int) $r['COD_RESPONSAVEL'] ?>" data-modal-titulo="Editar responsável">Editar</button><form method="post" data-confirm-submit="Excluir este responsável?"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $r['COD_RESPONSAVEL'] ?>"><button>Excluir</button></form></td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="5">Nenhum responsável cadastrado.</td></tr><?php endif; ?></tbody></table></div></section>
 <?php pageEnd(); ?>

@@ -3,9 +3,20 @@ require_once __DIR__ . '/includes/layout.php'; require_once __DIR__ . '/config/d
 require_once __DIR__ . '/includes/notificacoes_helpers.php';
 checkRole(['ADMIN', 'SECRETARIA']); $db = getDB(); $escolinha = currentEscolinhaId(); $edit = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    checkCsrf(); $action = $_POST['action'] ?? ''; $id = (int) ($_POST['id'] ?? 0);
+    checkCsrf();
+    foreach (['status', 'data_matricula'] as $campo) {
+        if (isset($_POST[$campo]) && !is_string($_POST[$campo])) {
+            flash('error', 'Revise os campos informados.');
+            go('matriculas.php');
+        }
+    }
+    $action = $_POST['action'] ?? ''; $id = (positiveId($_POST['id'] ?? null) ?? 0);
+    if (!in_array($action, ['create', 'update', 'delete'], true) || ($action !== 'create' && !$id)) {
+        flash('error', 'Operação ou identificador inválido.');
+        go('matriculas.php');
+    }
     if ($action === 'delete') { try { $db->prepare('DELETE m FROM TB_MATRICULA m JOIN TB_ALUNO a ON a.COD_ALUNO = m.COD_ALUNO WHERE m.COD_MATRICULA = ? AND a.COD_ESCOLINHA = ?')->execute([$id, $escolinha]); flash('success', 'Matrícula removida.'); } catch (PDOException $e) { flash('error', 'Não foi possível remover esta matrícula.'); } go('matriculas.php'); }
-    $aluno = (int) ($_POST['cod_aluno'] ?? 0); $turma = (int) ($_POST['cod_turma'] ?? 0); $data = $_POST['data_matricula'] ?? ''; $status = $_POST['status'] ?? 'ATIVA';
+    $aluno = (positiveId($_POST['cod_aluno'] ?? null) ?? 0); $turma = (positiveId($_POST['cod_turma'] ?? null) ?? 0); $data = $_POST['data_matricula'] ?? ''; $status = $_POST['status'] ?? 'ATIVA';
     if ($action === 'update') { $owner = $db->prepare('SELECT 1 FROM TB_MATRICULA m JOIN TB_ALUNO a ON a.COD_ALUNO = m.COD_ALUNO WHERE m.COD_MATRICULA = ? AND a.COD_ESCOLINHA = ?'); $owner->execute([$id, $escolinha]); if (!$owner->fetchColumn()) { flash('error', 'Matrícula não encontrada.'); go('matriculas.php'); } }
     try {
         if (!in_array($action, ['create', 'update'], true) || !validDate($data) || !in_array($status, ['ATIVA','ENCERRADA'], true)) throw new InvalidArgumentException('Dados da matrícula inválidos.');
@@ -38,4 +49,4 @@ $q=$db->prepare("SELECT COD_ALUNO,NOME FROM TB_ALUNO WHERE COD_ESCOLINHA=? AND (
 pageStart('Matrículas');
 ?>
 <section><h2><?= $edit?'Editar matrícula':'Nova matrícula' ?></h2><form method="post"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="<?= $edit?'update':'create' ?>"><?php if($edit):?><input type="hidden" name="id" value="<?= (int)$edit['COD_MATRICULA'] ?>"><?php endif;?><label>Aluno<select required name="cod_aluno"><option value="">Selecione</option><?php foreach($alunos as $a):?><option value="<?= (int)$a['COD_ALUNO'] ?>" <?=($edit['COD_ALUNO']??'')==$a['COD_ALUNO']?'selected':''?>><?=e($a['NOME'])?></option><?php endforeach;?></select></label><label>Turma<select required name="cod_turma"><option value="">Selecione</option><?php foreach($turmas as $t):?><option value="<?= (int)$t['COD_TURMA'] ?>" <?=($edit['COD_TURMA']??'')==$t['COD_TURMA']?'selected':''?>><?=e($t['NOME'])?></option><?php endforeach;?></select></label><label>Data<input required type="date" name="data_matricula" value="<?=e($edit['DATA_MATRICULA']??date('Y-m-d'))?>"></label><label>Situação<select name="status"><?php foreach(['ATIVA','ENCERRADA'] as $s):?><option <?=($edit['STATUS']??'ATIVA')===$s?'selected':''?>><?=$s?></option><?php endforeach;?></select></label><div><?php actionButton($edit?'Salvar alterações':'Matricular aluno');?><?php if($edit):?><a href="matriculas.php">Cancelar</a><?php endif;?></div></form></section>
-<section><div><table><thead><tr><th>Aluno</th><th>Turma</th><th>Data</th><th>Situação</th><th>Ações</th></tr></thead><tbody><?php foreach($lista as $m):?><tr><td><?=e($m['ALUNO'])?></td><td><?=e($m['TURMA'])?></td><td><?=e(date('d/m/Y',strtotime($m['DATA_MATRICULA'])))?></td><td><?=e($m['STATUS'])?></td><td><button type="button" class="acao-tabela" data-modal-url="matriculas.php?mini=1&amp;editar=<?=(int)$m['COD_MATRICULA']?>" data-modal-titulo="Editar matrícula">Editar</button><form method="post" onsubmit="return confirm('Remover esta matrícula?');"><input type="hidden" name="csrf_token" value="<?=e(csrfToken())?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?=(int)$m['COD_MATRICULA']?>"><button>Excluir</button></form></td></tr><?php endforeach;?></tbody></table></div></section><?php pageEnd();?>
+<section><div><table><thead><tr><th>Aluno</th><th>Turma</th><th>Data</th><th>Situação</th><th>Ações</th></tr></thead><tbody><?php foreach($lista as $m):?><tr><td><?=e($m['ALUNO'])?></td><td><?=e($m['TURMA'])?></td><td><?=e(date('d/m/Y',strtotime($m['DATA_MATRICULA'])))?></td><td><?=e($m['STATUS'])?></td><td><button type="button" class="acao-tabela" data-modal-url="matriculas.php?mini=1&amp;editar=<?=(int)$m['COD_MATRICULA']?>" data-modal-titulo="Editar matrícula">Editar</button><form method="post" data-confirm-submit="Remover esta matrícula?"><input type="hidden" name="csrf_token" value="<?=e(csrfToken())?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?=(int)$m['COD_MATRICULA']?>"><button>Excluir</button></form></td></tr><?php endforeach;?></tbody></table></div></section><?php pageEnd();?>

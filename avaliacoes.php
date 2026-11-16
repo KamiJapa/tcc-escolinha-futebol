@@ -10,7 +10,7 @@ $escolinha = currentEscolinhaId();
 $professor = hasRole(['PROFESSOR']) ? (int) $_SESSION['user_id'] : null;
 $tiposTreino = avaliacaoTiposTreino();
 $catalogo = avaliacaoCatalogoAtributos();
-$idAula = (int) ($_GET['aula'] ?? $_POST['id_aula'] ?? 0);
+$idAula = positiveId($_GET['aula'] ?? $_POST['id_aula'] ?? null) ?? 0;
 $aulaSelecionada = null;
 $alunos = [];
 $atributosAtivos = [];
@@ -221,7 +221,7 @@ pageStart('Avaliações');
                 <article><span class="avaliacao-metrica-icone azul">↗</span><div><small>Variação contra semana anterior</small><strong class="<?= $evolucaoSemanal !== null && $evolucaoSemanal < 0 ? 'negativo' : '' ?>"><?= $evolucaoSemanal === null ? '—' : ($evolucaoSemanal > 0 ? '+' : '') . e(number_format($evolucaoSemanal, 1, ',', '.')) ?><em><?= $evolucaoSemanal === null ? '' : ' pts' ?></em></strong><span><?= $dadosSemanaAnterior ? 'Comparação baseada em notas dos treinos' : 'Aguardando duas semanas com avaliações' ?></span></div></article>
                 <article><span class="avaliacao-metrica-icone violeta">⚽</span><div><small>Treinos avaliados</small><strong><?= $dadosSemanaAtual ? (int) $dadosSemanaAtual['TREINOS'] : 0 ?></strong><span>nesta semana</span></div></article>
             </div>
-            <?php if ($semanas): ?><div class="avaliacao-historico-semanas"><strong>Histórico semanal</strong><div><?php foreach (array_reverse($semanas) as $semana): ?><span><small><?= e(date('d/m', strtotime($semana['INICIO_SEMANA']))) ?></small><b style="height: <?= $semana['OVERALL_MEDIO'] === null ? '4' : e(max(4, (float) $semana['OVERALL_MEDIO'] * 9)) ?>%" title="Overall médio <?= $semana['OVERALL_MEDIO'] === null ? 'sem notas' : e(number_format((float) $semana['OVERALL_MEDIO'], 1, ',', '.')) ?>"></b><em><?= $semana['OVERALL_MEDIO'] === null ? '—' : e(number_format((float) $semana['OVERALL_MEDIO'], 1, ',', '.')) ?></em></span><?php endforeach; ?></div></div><?php endif; ?>
+            <?php if ($semanas): ?><div class="avaliacao-historico-semanas"><strong>Histórico semanal</strong><div><?php foreach (array_reverse($semanas) as $semana): ?><span><small><?= e(date('d/m', strtotime($semana['INICIO_SEMANA']))) ?></small><b data-chart-height="<?= $semana['OVERALL_MEDIO'] === null ? '4' : e(max(4, (float) $semana['OVERALL_MEDIO'] * 9)) ?>" title="Overall médio <?= $semana['OVERALL_MEDIO'] === null ? 'sem notas' : e(number_format((float) $semana['OVERALL_MEDIO'], 1, ',', '.')) ?>"></b><em><?= $semana['OVERALL_MEDIO'] === null ? '—' : e(number_format((float) $semana['OVERALL_MEDIO'], 1, ',', '.')) ?></em></span><?php endforeach; ?></div></div><?php endif; ?>
         </section>
 
         <section class="avaliacao-treinos-section">
@@ -281,7 +281,7 @@ pageStart('Avaliações');
             <?php endif; ?>
         </form>
         <?php if ($tipoSessao === '' || $tipoSessao === 'PERSONALIZADO'): ?>
-            <script>
+            <script nonce="<?= cspNonce() ?>">
                 const tipoAvaliacao = document.getElementById('tipoAvaliacao');
                 const painelAtributos = document.getElementById('painelAtributosPersonalizados');
                 const tipoSalvo = <?= json_encode($tipoSessao) ?>;

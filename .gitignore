@@ -1,0 +1,5 @@
+/.env*
+!/.env.example
+/config/local.php
+*.log
+__pycache__/

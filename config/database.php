@@ -1,40 +1,29 @@
 <?php
-// config/database.php
 
-// Database configuration constants
-define('DB_HOST', 'localhost');
-// Configuração padrão do MariaDB do XAMPP neste ambiente.
-define('DB_PORT', 3306);
-define('DB_NAME', 'bdescolinha');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+function dbSetting($name, $default) {
+    $value = getenv($name);
+    return $value === false ? $default : $value;
+}
 
-/**
- * Get a PDO database connection instance.
- * Uses a static variable to reuse the connection.
- * 
- * @return PDO
- */
 function getDB() {
     static $db = null;
-    
-    if ($db === null) {
-        try {
-            $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
-            $options = [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    if ($db instanceof PDO) return $db;
+
+    $host = dbSetting('DB_HOST', '127.0.0.1');
+    $port = dbSetting('DB_PORT', '3308');
+    $name = dbSetting('DB_NAME', 'bdescolinha');
+    try {
+        $db = new PDO("mysql:host=$host;port=$port;dbname=$name;charset=utf8mb4",
+            dbSetting('DB_USER', 'root'), dbSetting('DB_PASS', ''), [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-            ];
-            
-            $db = new PDO($dsn, DB_USER, DB_PASS, $options);
-        } catch (PDOException $e) {
-            // O detalhe fica no log; a tela não deve expor dados técnicos do banco.
-            error_log('Falha na conexão com o banco: ' . $e->getMessage());
-            http_response_code(500);
-            exit('Não foi possível conectar ao banco de dados. Verifique a configuração do ambiente.');
-        }
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]
+        );
+    } catch (PDOException $error) {
+        error_log('GestorFC: falha na conexão com o banco.');
+        http_response_code(503);
+        exit('Não foi possível conectar ao banco de dados. Tente novamente mais tarde.');
     }
-    
     return $db;
 }

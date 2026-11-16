@@ -10,34 +10,52 @@ $edit = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf();
-    $acao = $_POST['action'] ?? '';
-    $id = (int) ($_POST['id'] ?? 0);
-    if ($acao === 'delete') {
-        if ($id === (int) $_SESSION['user_id']) {
-            flash('error', 'Você não pode excluir seu próprio usuário.');
-        } else {
-            try {
-                $db->prepare('DELETE FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?')->execute([$id, $escolinha]);
-                flash('success', 'Usuário excluído.');
-            } catch (PDOException $erro) {
-                flash('error', 'Não é possível excluir este usuário porque ele está vinculado a uma avaliação técnica.');
-            }
-        }
+    $acao = postString('action');
+    $id = positiveId($_POST['id'] ?? null);
+    $actor = (int) $_SESSION['user_id'];
+    if (!in_array($acao, ['create', 'update', 'delete'], true) || ($acao !== 'create' && !$id)) {
+        flash('error', 'Operação ou usuário inválido.');
         go('usuarios.php');
     }
 
-    $nome = trim($_POST['nome'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $perfil = $_POST['perfil'] ?? '';
-    $senha = $_POST['senha'] ?? '';
+    $nome = trim(postString('nome'));
+    $email = trim(postString('email'));
+    $perfil = postString('perfil');
+    $senha = postString('senha');
     $ativo = isset($_POST['ativo']) ? 1 : 0;
-    if ($nome === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || !in_array($perfil, ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], true) || ($acao === 'create' && strlen($senha) < 6)) {
-        flash('error', 'Informe nome, e-mail válido, perfil e senha de ao menos 6 caracteres para um novo usuário.');
+    if ($acao !== 'delete' && ($nome === '' || mb_strlen($nome) > 100 || strlen($email) > 100
+        || !filter_var($email, FILTER_VALIDATE_EMAIL)
+        || !in_array($perfil, ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL'], true)
+        || (isset($_POST['ativo']) && !is_string($_POST['ativo']))
+        || (isset($_POST['senha']) && !is_string($_POST['senha']))
+        || (($acao === 'create' || $senha !== '') && (strlen($senha) < 6 || strlen($senha) > 72 || strpos($senha, "\0") !== false)))) {
+        flash('error', 'Informe nome, e-mail válido, perfil e senha válida de 6 a 72 bytes para um novo usuário.');
         go('usuarios.php' . ($id ? '?editar=' . $id : ''));
     }
 
     try {
-        if ($acao === 'create') {
+        $db->beginTransaction();
+        // Serializa mudanças de perfil, exclusão e desativação nesta escolinha.
+        $lock = $db->prepare('SELECT COD_ESCOLINHA FROM TB_ESCOLINHA WHERE COD_ESCOLINHA = ? FOR UPDATE');
+        $lock->execute([$escolinha]);
+        $admins = $db->prepare("SELECT COD_USUARIO FROM TB_USUARIO WHERE COD_ESCOLINHA = ? AND PERFIL = 'ADMIN' AND ATIVO = 1");
+        $admins->execute([$escolinha]);
+        $adminIds = array_map('intval', $admins->fetchAll(PDO::FETCH_COLUMN));
+        if (!in_array($actor, $adminIds, true)) {
+            throw new DomainException('Seu acesso administrativo não está mais ativo.');
+        }
+
+        $perdeAdmin = $acao === 'delete' || ($acao === 'update' && ($perfil !== 'ADMIN' || !$ativo));
+        if ($perdeAdmin && count($adminIds) === 1 && $adminIds[0] === $id) {
+            throw new DomainException('Mantenha seu próprio acesso ativo. A escolinha precisa de pelo menos um administrador ativo.');
+        }
+        if ($acao === 'delete') {
+            if ($id === $actor) throw new DomainException('Você não pode excluir seu próprio usuário.');
+            $stmt = $db->prepare('DELETE FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
+            $stmt->execute([$id, $escolinha]);
+            if (!$stmt->rowCount()) throw new DomainException('Usuário não encontrado nesta escolinha.');
+            flash('success', 'Usuário excluído.');
+        } elseif ($acao === 'create') {
             $db->prepare('INSERT INTO TB_USUARIO (COD_ESCOLINHA,NOME,EMAIL,SENHA_HASH,PERFIL,ATIVO) VALUES (?,?,?,?,?,?)')
                 ->execute([$escolinha, $nome, $email, password_hash($senha, PASSWORD_DEFAULT), $perfil, $ativo]);
             $idNovo = (int) $db->lastInsertId();
@@ -49,11 +67,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $consulta = $db->prepare('SELECT PERFIL, ATIVO FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ?');
             $consulta->execute([$id, $escolinha]);
             $anterior = $consulta->fetch();
-            if (!$anterior) { flash('error', 'Usuário não encontrado.'); go('usuarios.php'); }
-            if ($anterior['PERFIL'] === 'ALUNO') { flash('error', 'Gerencie o acesso do aluno pelo cadastro do atleta.'); go('usuarios.php'); }
+            if (!$anterior) throw new DomainException('Usuário não encontrado nesta escolinha.');
+            if ($anterior['PERFIL'] === 'ALUNO') throw new DomainException('Gerencie o acesso do aluno pelo cadastro do atleta.');
             if ($id === (int) $_SESSION['user_id'] && ($perfil !== $anterior['PERFIL'] || !$ativo)) {
-                flash('error', 'Mantenha seu próprio perfil e acesso ativo para não perder o controle administrativo.');
-                go('usuarios.php');
+                throw new DomainException('Mantenha seu próprio perfil e acesso ativo para não perder o controle administrativo.');
             }
             if ($senha !== '') {
                 $db->prepare('UPDATE TB_USUARIO SET NOME=?,EMAIL=?,PERFIL=?,ATIVO=?,SENHA_HASH=? WHERE COD_USUARIO=? AND COD_ESCOLINHA=?')
@@ -68,15 +85,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             flash('success', 'Usuário atualizado.');
         }
+        $db->commit();
+    } catch (DomainException $erro) {
+        if ($db->inTransaction()) $db->rollBack();
+        flash('error', $erro->getMessage());
     } catch (PDOException $erro) {
-        flash('error', 'Já existe um usuário com este e-mail.');
+        if ($db->inTransaction()) $db->rollBack();
+        $duplicado = (int) ($erro->errorInfo[1] ?? 0) === 1062;
+        flash('error', $duplicado ? 'Já existe um usuário com este e-mail.' : 'Não foi possível alterar o usuário. Confira se há registros vinculados.');
     }
     go('usuarios.php');
 }
 
 if (isset($_GET['editar'])) {
+    $editId = positiveId($_GET['editar']);
+    if (!$editId) { flash('error', 'Usuário inválido.'); go('usuarios.php'); }
     $consulta = $db->prepare('SELECT u.*, a.COD_ALUNO FROM TB_USUARIO u LEFT JOIN TB_ALUNO a ON a.COD_USUARIO = u.COD_USUARIO WHERE u.COD_USUARIO = ? AND u.COD_ESCOLINHA = ?');
-    $consulta->execute([(int) $_GET['editar'], $escolinha]);
+    $consulta->execute([$editId, $escolinha]);
     $edit = $consulta->fetch();
     if (!$edit) { flash('error', 'Usuário não encontrado.'); go('usuarios.php'); }
     if ($edit['PERFIL'] === 'ALUNO') {
@@ -108,7 +133,7 @@ pageStart('Usuários');
 <section><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Estado</th><th>Ações</th></tr></thead><tbody>
 <?php foreach ($lista as $usuario): ?><tr><td><?= e($usuario['NOME']) ?></td><td><?= e($usuario['EMAIL']) ?></td><td><?= e($usuario['PERFIL']) ?></td><td><?= $usuario['ATIVO'] ? 'Ativo' : 'Inativo' ?></td><td>
     <?php if ($usuario['PERFIL'] === 'ALUNO' && $usuario['COD_ALUNO']): ?><button type="button" class="acao-tabela" data-modal-url="alunos.php?mini=1&amp;editar=<?= (int) $usuario['COD_ALUNO'] ?>" data-modal-titulo="Acesso do aluno">Gerenciar acesso</button><?php else: ?><button type="button" class="acao-tabela" data-modal-url="usuarios.php?mini=1&amp;editar=<?= (int) $usuario['COD_USUARIO'] ?>" data-modal-titulo="Editar usuário">Editar</button><?php endif; ?>
-    <?php if ((int) $usuario['COD_USUARIO'] !== (int) $_SESSION['user_id']): ?><form method="post" onsubmit="return confirm('Excluir este usuário?');"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $usuario['COD_USUARIO'] ?>"><button>Excluir</button></form><?php endif; ?>
+    <?php if ((int) $usuario['COD_USUARIO'] !== (int) $_SESSION['user_id']): ?><form method="post" data-confirm-submit="Excluir este usuário?"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $usuario['COD_USUARIO'] ?>"><button>Excluir</button></form><?php endif; ?>
 </td></tr><?php endforeach; ?>
 </tbody></table></section>
 <?php pageEnd(); ?>

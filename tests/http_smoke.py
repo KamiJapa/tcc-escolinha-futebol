@@ -144,4 +144,24 @@ ok('E-mail ou senha inválidos' in body,'Login de aluno inativo bloqueado')
 # E3: excluir aula via HTTP e verificar a mensagem sobre as presenças.
 code,body=admin.post('aulas.php',{'action':'delete','id':1})
 ok('Aula excluída. As presenças foram removidas' in body,'Exclusão HTTP de aula informa remoção das presenças')
+# Camisa opcional, observações vazias e duplicata entre alunos ativos.
+new_student = {'action': 'create', 'nome': 'QA Camisa', 'data_nascimento': '2015-01-29',
+               'cod_responsavel': 1, 'status': 'ATIVO', 'observacoes_medicas': '',
+               'numero_camisa': 98}
+code, body = admin.post('alunos.php?mini=1', new_student)
+ok('Aluno cadastrado' in body, 'Aluno com camisa e observações vazias gravado')
+code, body = admin.post('alunos.php?mini=1', dict(new_student, nome='QA Duplicata'))
+ok('já está com outro aluno ativo' in body, 'Cadastro rejeita camisa ativa duplicada')
+code, body = admin.post('alunos.php?mini=1', dict(new_student, nome='QA Sem Camisa', numero_camisa=''))
+ok('Aluno cadastrado' in body, 'Cadastro aceita camisa vazia')
+
+# Sessões separadas continuam usando o mesmo contador (deixe por último).
+for attempt in range(3):
+    login_email = ' ADMIN@TESTE.COM ' if attempt == 1 else 'admin@teste.com'
+    code, body = Client().post('login.php', {'email': login_email, 'senha': 'invalida'})
+    ok(code == 200 and 'E-mail ou senha inválidos.' in body, 'Falha de login em sessão nova')
+code, body = Client().post('login.php', {'email': 'sem-conta@example.test', 'senha': 'invalida'})
+ok(code == 200 and 'E-mail ou senha inválidos.' in body, 'Conta inexistente recebe a mesma mensagem')
+code, body = Client().post('login.php', {'email': 'admin@teste.com', 'senha': '123456'})
+ok(code == 200 and 'E-mail ou senha inválidos.' in body, 'Três falhas bloqueiam a senha correta')
 print(f'{count} verificações passaram.')

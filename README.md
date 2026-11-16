@@ -6,8 +6,16 @@ Sistema escolar para organizar alunos, responsáveis, turmas, matrículas e pres
 
 1. Inicie o Apache e o MySQL pelo painel do XAMPP.
 2. Abra o phpMyAdmin e importe `database.sql` para criar o banco e os dados de demonstração. **Atenção:** esse arquivo apaga e recria as tabelas deste sistema. Não o importe sobre dados que queira guardar.
-3. Confira `config/database.php`. Neste computador, o MySQL usa a porta `3308` e o usuário `root` não tem senha. Se sua instalação usar outra configuração, ajuste as constantes desse arquivo.
+3. Use MariaDB em 127.0.0.1:3308 com o banco bdescolinha. Confira a porta no painel do XAMPP.
 4. Abra `http://localhost/tcc/login.php`.
+
+### Configuração do ambiente
+
+O PHP lê `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DB_PASS` do ambiente.
+Os padrões para o XAMPP local são 127.0.0.1, 3308, bdescolinha, root e senha vazia.
+Consulte `.env.example` para os nomes das variáveis. Defina-as no terminal antes de
+iniciar o servidor PHP ou use `SetEnv` na configuração local do Apache e reinicie o
+Apache. O projeto lê o ambiente do processo.
 
 ## Contas de demonstração
 
@@ -35,6 +43,24 @@ O link **Cadastre-se** cria uma conta de responsável. Depois de criar a conta, 
 
 Para manter os dados atuais, não reimporte `database.sql`. Execute uma vez `migration_notificacoes.sql` no banco usado pelo sistema. Ela cria a tabela de notificações por escolinha e conta. Se o banco ainda não tiver `TB_FINANCEIRO`, execute também `migration_financeiro.sql` para instalar a estrutura usada pelo módulo financeiro.
 
+Execute `migration_login_tentativas.sql` e `migration_camisa_ativa.sql` no banco
+selecionado. A migração de camisas lista duplicatas ativas por escolinha e retorna
+erro quando precisa de revisão manual. Resolva os números duplicados e reaplique.
+Os registros atuais são preservados.
+
+## Segurança e regras de cadastro
+
+- Três falhas de login, cada uma a menos de 15 minutos da anterior, bloqueiam
+  novas tentativas por 15 minutos. O contador usa e-mail normalizado e o IP da
+  conexão. Um login bem-sucedido reinicia a contagem. As linhas vencidas podem
+  ser limpas com `DELETE FROM TB_LOGIN_TENTATIVA WHERE EXPIRA_EM <= UTC_TIMESTAMP()`.
+- Número de camisa opcional de 0 a 99, exclusivo entre alunos ativos da mesma
+  escolinha. Inativar libera o número. Reativar exige número disponível.
+- A área do responsável mostra os quatro avisos mais recentes. A página de
+  notificações mantém a lista completa.
+- O CSP permite recursos locais e vincula scripts inline ao nonce da resposta.
+  Gráficos, confirmações e trocas de filtro usam JavaScript local.
+
 ## Como o cadastro funciona
 
 `cadastro.php` verifica os campos obrigatórios e se as senhas coincidem. A senha é convertida em hash com `password_hash`; o sistema não guarda a senha original. Em seguida, uma transação grava a conta em `TB_USUARIO` e o perfil de responsável em `TB_RESPONSAVEL`. Se qualquer gravação falhar, a transação é desfeita para não deixar metade do cadastro no banco.
@@ -52,7 +78,7 @@ Para manter os dados atuais, não reimporte `database.sql`. Execute uma vez `mig
 ## Para estudar o código
 
 - As classes como `flex`, `grid`, `p-4` e `bg-emerald-950` são classes do Tailwind e controlam somente a aparência do HTML. Por exemplo, `grid` organiza os elementos em colunas e `p-4` adiciona espaço interno.
-- O Tailwind é carregado pela CDN no navegador; é preciso estar conectado à internet para ver essas classes. O CSS próprio do projeto continua em `assets/css/style.css`.
+- O Tailwind compilado roda a partir de assets/css/tailwind.css. O CSS próprio fica em assets/css/style.css.
 - O arquivo `assets/css/style.css` contém CSS comum para cores, estados de foco, cartões e adaptações para celular.
 - Em `login.php`, o `if ($_SERVER['REQUEST_METHOD'] === 'POST')` roda quando o formulário é enviado. `loginUser` procura a conta e compara a senha digitada com o hash guardado no banco.
 - Em `includes/auth.php`, `loginUser` abre a conexão, consulta o usuário e usa `password_verify`. Se a senha estiver certa, salva o identificador e o perfil na sessão.
@@ -79,7 +105,7 @@ Não há migração adicional: utiliza as tabelas e migrações já existentes.
 Teste de regressão (em um banco de teste com o schema aplicado):
 
 ```powershell
-$env:TEST_DB_DSN = 'mysql:host=127.0.0.1;dbname=bdescolinha;charset=utf8mb4'
+$env:TEST_DB_DSN = 'mysql:host=127.0.0.1;port=33367;dbname=gestorfc_codex_test_exemplo;charset=utf8mb4'
 php tests/responsavel_scope.php
 ```
 

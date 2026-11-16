@@ -59,6 +59,7 @@ $idsTurmas = array_map(static function ($turma) { return (int) $turma['COD_TURMA
 $baseUrl = 'jogos.php';
 
 function jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId, $alunoId = 0) {
+    if (!$id) return false;
     $sql = 'SELECT j.* FROM TB_JOGO j JOIN TB_TURMA t ON t.COD_TURMA = j.COD_TURMA WHERE j.COD_JOGO = ? AND t.COD_ESCOLINHA = ?';
     $params = [$id, $escolinha];
     if ($perfil === 'PROFESSOR') {
@@ -78,13 +79,25 @@ function jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf();
+    foreach (['acao', 'adversario', 'horario', 'local', 'data', 'gols_escolinha', 'gols_adversario', 'observacoes'] as $campo) {
+        if (isset($_POST[$campo]) && !is_string($_POST[$campo])) {
+            flash('error', 'Revise os campos informados.');
+            go('jogos.php');
+        }
+    }
+
     if (!$podeGerenciar) {
         http_response_code(403);
         exit('Acesso não autorizado.');
     }
     $acao = (string) ($_POST['acao'] ?? '');
-    $id = (int) ($_POST['jogo'] ?? 0);
+    $id = (positiveId($_POST['jogo'] ?? null) ?? 0);
     $retorno = $baseUrl . (isset($_GET['mini']) ? '?mini=1' : '');
+
+    if ((!empty($_POST['jogo']) && !$id) || ($acao === 'excluir' && !$id)) {
+        flash('error', 'Identificador do jogo inválido.');
+        go($retorno);
+    }
 
     if ($acao === 'excluir') {
         $jogo = jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId, $alunoId);
@@ -99,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($acao === 'salvar') {
-        $turmaId = (int) ($_POST['turma'] ?? 0);
+        $turmaId = (positiveId($_POST['turma'] ?? null) ?? 0);
         $adversario = trim((string) ($_POST['adversario'] ?? ''));
         $data = (string) ($_POST['data'] ?? '');
         $horario = trim((string) ($_POST['horario'] ?? ''));
@@ -107,7 +120,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $golsCasaTexto = trim((string) ($_POST['gols_escolinha'] ?? ''));
         $golsForaTexto = trim((string) ($_POST['gols_adversario'] ?? ''));
         $observacoes = trim((string) ($_POST['observacoes'] ?? ''));
-        $dataValida = DateTime::createFromFormat('!Y-m-d', $data);
         $horaValida = $horario === '' || preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $horario);
         $resultadoVazio = $golsCasaTexto === '' && $golsForaTexto === '';
         $golsCasa = $golsCasaTexto === '' ? null : filter_var($golsCasaTexto, FILTER_VALIDATE_INT);
@@ -115,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $resultadoValido = $resultadoVazio || ($golsCasa !== false && $golsFora !== false && $golsCasa !== null && $golsFora !== null && $golsCasa >= 0 && $golsCasa <= 99 && $golsFora >= 0 && $golsFora <= 99);
         $turmaPermitida = in_array($turmaId, $idsTurmas, true);
         $atual = $id ? jogoDaEscolinha($db, $id, $escolinha, $perfil, $usuario, $responsavelId, $alunoId) : null;
-        if (!$turmaPermitida || !$adversario || mb_strlen($adversario) > 100 || !$dataValida || $dataValida->format('Y-m-d') !== $data || !$horaValida || !$resultadoValido || ($id && !$atual)) {
+        if (!$turmaPermitida || !$adversario || mb_strlen($adversario) > 100 || mb_strlen($local) > 100 || strlen($observacoes) > 65535 || !validDate($data) || !$horaValida || !$resultadoValido || ($id && !$atual)) {
             flash('error', 'Confira turma, adversário, data, horário e resultado (0 a 99 gols).');
             go($retorno);
         }
@@ -189,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$turmaFiltro = (int) ($_GET['turma'] ?? 0);
+$turmaFiltro = (positiveId($_GET['turma'] ?? null) ?? 0);
 if ($turmaFiltro && !in_array($turmaFiltro, $idsTurmas, true)) $turmaFiltro = 0;
 $idsPermitidos = $idsTurmas ?: [0];
 $marcadoresTurma = implode(',', array_fill(0, count($idsPermitidos), '?'));
@@ -250,7 +262,7 @@ foreach ($estatisticas as $estatistica) $estatisticasPorTurma[$estatistica['COD_
 $edit = null;
 $elencoEdicao = [];
 if ($podeGerenciar && isset($_GET['editar'])) {
-    $edit = jogoDaEscolinha($db, (int) $_GET['editar'], $escolinha, $perfil, $usuario, $responsavelId, $alunoId);
+    $edit = jogoDaEscolinha($db, (positiveId($_GET['editar']) ?? 0), $escolinha, $perfil, $usuario, $responsavelId, $alunoId);
     if (!$edit || !in_array((int) $edit['COD_TURMA'], $idsTurmas, true)) {
         flash('error', 'Jogo não encontrado nesta escolinha.');
         go('jogos.php');
@@ -259,7 +271,7 @@ if ($podeGerenciar && isset($_GET['editar'])) {
     $stmt->execute([(int) $edit['COD_JOGO']]);
     foreach ($stmt->fetchAll() as $registro) $elencoEdicao[(int) $registro['COD_ALUNO']] = $registro;
 }
-$turmaForm = $edit ? (int) $edit['COD_TURMA'] : (int) ($_GET['nova_turma'] ?? ($idsTurmas[0] ?? 0));
+$turmaForm = $edit ? (int) $edit['COD_TURMA'] : (positiveId($_GET['nova_turma'] ?? null) ?? ($idsTurmas[0] ?? 0));
 if (!in_array($turmaForm, $idsTurmas, true)) $turmaForm = (int) ($idsTurmas[0] ?? 0);
 $elenco = [];
 if ($podeGerenciar && $turmaForm) {
@@ -300,7 +312,7 @@ pageStart('Jogos');
     <section class="jogos-form-card" id="formularioJogo"><div class="jogos-titulo-secao"><div><p class="jogos-kicker">SÚMULA</p><h2><?= $edit ? 'Editar partida' : 'Registrar partida' ?></h2><p>Escalação e números individuais ficam vinculados a esta partida.</p></div><a class="jogos-fechar-form" href="jogos.php<?= $turmaFiltro ? '?turma=' . $turmaFiltro : '' ?>" aria-label="Fechar formulário">×</a></div>
         <form method="post" class="jogos-form">
             <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="acao" value="salvar"><input type="hidden" name="jogo" value="<?= (int) ($edit['COD_JOGO'] ?? 0) ?>">
-            <label class="jogos-form-turma"><span>Turma</span><select name="turma" required onchange="window.location.href='jogos.php?novo=1&nova_turma='+this.value+'#formularioJogo'"><?php foreach ($turmas as $turma): ?><option value="<?= (int) $turma['COD_TURMA'] ?>" <?= $turmaForm === (int) $turma['COD_TURMA'] ? 'selected' : '' ?>><?= e($turma['NOME']) ?> · <?= e($turma['FAIXA_ETARIA']) ?></option><?php endforeach; ?></select></label>
+            <label class="jogos-form-turma"><span>Turma</span><select name="turma" required data-jogo-turma><?php foreach ($turmas as $turma): ?><option value="<?= (int) $turma['COD_TURMA'] ?>" <?= $turmaForm === (int) $turma['COD_TURMA'] ? 'selected' : '' ?>><?= e($turma['NOME']) ?> · <?= e($turma['FAIXA_ETARIA']) ?></option><?php endforeach; ?></select></label>
             <label><span>Adversário</span><input name="adversario" required maxlength="100" value="<?= e($edit['ADVERSARIO'] ?? '') ?>" placeholder="Nome do time adversário"></label>
             <label><span>Data</span><input name="data" type="date" required value="<?= e($edit['DATA_JOGO'] ?? '') ?>"></label>
             <label><span>Horário</span><input name="horario" type="time" value="<?= e(!empty($edit['HORARIO']) ? substr((string) $edit['HORARIO'], 0, 5) : '') ?>"></label>
@@ -326,7 +338,7 @@ pageStart('Jogos');
         <div class="jogo-card-meta"><?php if (!empty($jogo['LOCAL'])): ?><span>⌖ <?= e($jogo['LOCAL']) ?></span><?php endif; ?><?php if (!empty($jogo['PROFESSOR'])): ?><span>◉ <?= e($jogo['PROFESSOR']) ?></span><?php endif; ?><span><?= count($participantes) ?> atleta<?= count($participantes) === 1 ? '' : 's' ?> com participação</span></div>
         <?php if ($jogo['OBSERVACOES']): ?><p class="jogo-observacao"><?= e($jogo['OBSERVACOES']) ?></p><?php endif; ?>
         <details class="jogo-detalhes"><summary>Escalação e números individuais</summary><?php if ($participantes): ?><div class="jogo-participantes"><?php foreach ($participantes as $atleta): ?><span><?= (int) $atleta['TITULAR'] ? '<b>XI</b> ' : '' ?><?= $atleta['NUMERO_CAMISA'] !== null ? '#' . (int) $atleta['NUMERO_CAMISA'] . ' ' : '' ?><?= e($atleta['NOME']) ?><?php if ((int) $atleta['GOLS'] || (int) $atleta['ASSISTENCIAS']): ?><small><?= (int) $atleta['GOLS'] ?> gol<?= (int) $atleta['GOLS'] === 1 ? '' : 's' ?> · <?= (int) $atleta['ASSISTENCIAS'] ?> assist.</small><?php endif; ?></span><?php endforeach; ?></div><?php else: ?><p class="jogos-vazio-inline">Ainda não há participações registradas.</p><?php endif; ?></details>
-        <?php if ($podeGerenciar): ?><div class="jogo-card-acoes"><a href="jogos.php?editar=<?= $jogoId ?>#formularioJogo">Editar jogo</a><form method="post" onsubmit="return confirm('Remover este jogo e as estatísticas individuais vinculadas?')"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="acao" value="excluir"><input type="hidden" name="jogo" value="<?= $jogoId ?>"><button type="submit">Remover</button></form></div><?php endif; ?></article>
+        <?php if ($podeGerenciar): ?><div class="jogo-card-acoes"><a href="jogos.php?editar=<?= $jogoId ?>#formularioJogo">Editar jogo</a><form method="post" data-confirm-submit="Remover este jogo e as estatísticas individuais vinculadas?"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="acao" value="excluir"><input type="hidden" name="jogo" value="<?= $jogoId ?>"><button type="submit">Remover</button></form></div><?php endif; ?></article>
         <?php
     };
     ?>

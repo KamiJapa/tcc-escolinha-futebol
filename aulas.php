@@ -11,6 +11,7 @@ $professor = hasRole(['PROFESSOR']) ? (int) $_SESSION['user_id'] : null;
 $edit = null;
 
 function aulaDaEscolinha($db, $id, $escolinha, $professor) {
+    if (!$id) return false;
     $sql = 'SELECT a.* FROM TB_AULA a JOIN TB_TURMA t ON t.COD_TURMA = a.COD_TURMA WHERE a.COD_AULA = ? AND t.COD_ESCOLINHA = ?';
     $argumentos = [$id, $escolinha];
     if ($professor) {
@@ -24,8 +25,19 @@ function aulaDaEscolinha($db, $id, $escolinha, $professor) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf();
+    foreach (['tema_treino', 'horario', 'objetivo', 'exercicios', 'observacao', 'tipo_treino', 'data_aula'] as $campo) {
+        if (isset($_POST[$campo]) && !is_string($_POST[$campo])) {
+            flash('error', 'Revise os campos informados.');
+            go('aulas.php');
+        }
+    }
+
     $acao = $_POST['action'] ?? '';
-    $id = (int) ($_POST['id'] ?? 0);
+    $id = (positiveId($_POST['id'] ?? null) ?? 0);
+    if (!in_array($acao, ['create', 'update', 'delete', 'attendance'], true) || (in_array($acao, ['update', 'delete', 'attendance'], true) && !$id)) {
+        flash('error', 'Operação ou identificador inválido.');
+        go('aulas.php');
+    }
 
     if ($acao === 'attendance') {
         $aula = aulaDaEscolinha($db, $id, $escolinha, $professor);
@@ -39,7 +51,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $q->execute([$aula['COD_TURMA'], $escolinha]);
         $permitidos = array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN));
         foreach ($alunos as $codigo => $dados) {
-            if (!in_array((int) $codigo, $permitidos, true) || !is_array($dados) || mb_strlen($dados['justificativa'] ?? '') > 255) {
+            if (!in_array(positiveId($codigo), $permitidos, true) || !is_array($dados)
+                || !is_string($dados['justificativa'] ?? '') || mb_strlen($dados['justificativa'] ?? '') > 255
+                || (isset($dados['presente']) && !is_string($dados['presente']))) {
                 http_response_code(400); exit('Aluno ou justificativa inválidos para esta chamada.');
             }
         }
@@ -84,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         go('aulas.php');
     }
 
-    $turma = (int) ($_POST['cod_turma'] ?? 0);
+    $turma = (positiveId($_POST['cod_turma'] ?? null) ?? 0);
     $data = $_POST['data_aula'] ?? '';
     $tema = trim($_POST['tema_treino'] ?? '');
     $horario = trim($_POST['horario'] ?? '');
@@ -97,6 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tipoValido = isset($tiposValidos[$tipo])
         || ($acao === 'update' && $tipo === '' && $aulaAtual['TIPO_TREINO'] === null);
 
+    if (!$turma) { flash('error', 'Selecione uma turma válida.'); go('aulas.php'); }
     $turmaSql = 'SELECT 1 FROM TB_TURMA WHERE COD_TURMA = ? AND COD_ESCOLINHA = ?';
     $argumentosTurma = [$turma, $escolinha];
     if ($professor) {
@@ -106,9 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $consulta = $db->prepare($turmaSql);
     $consulta->execute($argumentosTurma);
 
-    $dataValida = DateTime::createFromFormat('!Y-m-d', (string) $data);
     $horarioValido = $horario === '' || preg_match('/^(?:[01]\d|2[0-3]):[0-5]\d$/', $horario);
-    if (mb_strlen($tema)>100 || mb_strlen($objetivo)>65535 || mb_strlen($exercicios)>65535 || mb_strlen($observacao)>65535 || !$consulta->fetchColumn() || !$dataValida || $dataValida->format('Y-m-d') !== $data || !$tema || !$tipoValido || !$horarioValido
+    if (mb_strlen($tema)>100 || strlen($objetivo)>65535 || strlen($exercicios)>65535 || strlen($observacao)>65535 || !$consulta->fetchColumn() || !validDate($data) || !$tema || !$tipoValido || !$horarioValido
         || ($acao === 'create' && $tipo === '')
         || ($tipo === 'PERSONALIZADO' && !$customizados)) {
         flash('error', 'Revise turma, data, tema e tipo do treino. Treinos personalizados precisam de ao menos um atributo.');
@@ -151,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (isset($_GET['editar'])) {
-    $edit = aulaDaEscolinha($db, (int) $_GET['editar'], $escolinha, $professor);
+    $edit = aulaDaEscolinha($db, (positiveId($_GET['editar']) ?? 0), $escolinha, $professor);
     if (!$edit) {
         flash('error', 'Aula não encontrada.');
         go('aulas.php');
@@ -163,7 +177,7 @@ $consulta->execute($professor ? [$escolinha, $professor] : [$escolinha]);
 $turmas = $consulta->fetchAll();
 
 if (isset($_GET['chamada'])) {
-    $aula = aulaDaEscolinha($db, (int) $_GET['chamada'], $escolinha, $professor);
+    $aula = aulaDaEscolinha($db, (positiveId($_GET['chamada']) ?? 0), $escolinha, $professor);
     if (!$aula) {
         flash('error', 'Aula não encontrada.');
         go('aulas.php');
@@ -247,7 +261,7 @@ pageStart('Aulas e chamada');
 
 <?php if (!isset($_GET['mini'])): ?>
     <dialog class="modal-cadastro" id="modalAulas" aria-labelledby="tituloModalAulas"><header class="modal-cabecalho"><h2 id="tituloModalAulas">Treinos</h2><button type="button" class="fechar-modal" id="fecharModalAulas" aria-label="Fechar">×</button></header><iframe id="iframeAulas" title="Chamada ou edição do treino"></iframe></dialog>
-    <script>
+    <script nonce="<?= cspNonce() ?>">
         const tipoTreino = document.getElementById('tipoTreino');
         const atributosPersonalizados = document.getElementById('atributosPersonalizados');
         if (tipoTreino && atributosPersonalizados) {

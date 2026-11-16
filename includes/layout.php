@@ -67,8 +67,9 @@ function pageStart($title) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?> - GestorFC</title>
-    <?php if ($title !== 'Meus filhos'): ?><script src="https://cdn.tailwindcss.com"></script><?php endif; ?>
+    <?php if ($title !== 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/tailwind.css"><?php endif; ?>
     <link rel="stylesheet" href="assets/css/style.css">
+    <script defer src="assets/js/gestorfc.js"></script>
     <?php if ($title === 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/responsavel.css"><?php endif; ?>
 </head>
 <body class="mini-pagina<?= $modoChamada . $modoCamisas ?> bg-slate-950 p-4 text-slate-100">
@@ -115,8 +116,9 @@ function pageStart($title) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?> - GestorFC</title>
-    <?php if ($title !== 'Meus filhos'): ?><script src="https://cdn.tailwindcss.com"></script><?php endif; ?>
+    <?php if ($title !== 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/tailwind.css"><?php endif; ?>
     <link rel="stylesheet" href="assets/css/style.css">
+    <script defer src="assets/js/gestorfc.js"></script>
     <?php if ($title === 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/responsavel.css"><?php endif; ?>
 </head>
 <body class="pagina-sistema<?= $classePagina ?> min-h-screen bg-slate-950 text-slate-100">
@@ -146,6 +148,7 @@ function pageStart($title) {
                 <?php menuItem('aulas.php?secao=presenca', 'Presença', 'presence', ['ADMIN', 'PROFESSOR'], [], null, 'presenca'); ?>
                 <?php menuItem('metas.php', 'Metas', 'goal', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'ALUNO'], ['metas.php']); ?>
                 <?php menuItem('camisas.php', 'Camisas', 'shirt', ['ADMIN', 'SECRETARIA'], ['camisas.php']); ?>
+                <?php menuItem('financeiro.php', 'Financeiro', 'growth', ['ADMIN', 'SECRETARIA'], ['financeiro.php']); ?>
                 <?php menuItem('notificacoes.php', 'Notificações', 'bell', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['notificacoes.php'], $totalNaoLidas > 0 ? $totalNaoLidas : null); ?>
 
                 <?php if (hasRole(['ADMIN', 'SECRETARIA'])): ?>
@@ -179,7 +182,7 @@ function pageStart($title) {
                     <header class="modal-cabecalho"><h2 id="tituloModalRecurso"><?= e($title) ?></h2><button type="button" class="fechar-modal" id="fecharModalRecurso" aria-label="Fechar">×</button></header>
                     <iframe id="iframeRecurso" title="Formulário"></iframe>
                 </dialog>
-                <script>
+                <script nonce="<?= cspNonce() ?>">
                     const modalRecurso = document.getElementById('modalRecurso');
                     const iframeRecurso = document.getElementById('iframeRecurso');
                     const tituloModalRecurso = document.getElementById('tituloModalRecurso');
@@ -206,7 +209,7 @@ function pageStart($title) {
             <?php endif; ?>
     <?php
     ?>
-        <script>
+        <script nonce="<?= cspNonce() ?>">
             (function () {
                 const menu = document.getElementById('menuLateral');
                 const abrir = document.getElementById('abrirMenuMobile');

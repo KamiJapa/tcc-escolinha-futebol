@@ -13,8 +13,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acao = $_POST['acao'] ?? '';
 
     if ($acao === 'atribuir') {
-        $aluno = (int) ($_POST['aluno'] ?? 0);
-        $numeroTexto = trim($_POST['numero'] ?? '');
+        $aluno = positiveId($_POST['aluno'] ?? null);
+        $numeroTexto = isset($_POST['numero']) && !is_string($_POST['numero']) ? 'inválido' : trim(postString('numero'));
         $numero = $numeroTexto === '' ? null : filter_var($numeroTexto, FILTER_VALIDATE_INT);
 
         if ($aluno <= 0 || ($numeroTexto !== '' && ($numero === false || $numero < 0 || $numero > 99))) {
@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             go($retorno);
         }
 
-        $verificarAluno = $db->prepare('SELECT NOME, NUMERO_CAMISA FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
+        $verificarAluno = $db->prepare('SELECT NOME, NUMERO_CAMISA, STATUS FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
         $verificarAluno->execute([$aluno, $escolinha]);
         $dadosAluno = $verificarAluno->fetch();
         if (!$dadosAluno) {
@@ -30,9 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             go($retorno);
         }
 
-        if ($numero !== null) {
+        if ($numero !== null && $dadosAluno['STATUS'] === 'ATIVO') {
             $verificarNumero = $db->prepare(
-                'SELECT NOME FROM TB_ALUNO WHERE COD_ESCOLINHA = ? AND NUMERO_CAMISA = ? AND COD_ALUNO <> ? LIMIT 1'
+                'SELECT NOME FROM TB_ALUNO WHERE COD_ESCOLINHA = ? AND STATUS = \'ATIVO\' AND NUMERO_CAMISA = ? AND COD_ALUNO <> ? LIMIT 1'
             );
             $verificarNumero->execute([$escolinha, $numero, $aluno]);
             $nomeDonoNumero = $verificarNumero->fetchColumn();
@@ -43,7 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $atualizar = $db->prepare('UPDATE TB_ALUNO SET NUMERO_CAMISA = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
-        $atualizar->execute([$numero, $aluno, $escolinha]);
+        try {
+            $atualizar->execute([$numero, $aluno, $escolinha]);
+        } catch (PDOException $error) {
+            flash('error', isDuplicateShirt($error) ? 'Esse número já está com outro aluno ativo.' : 'Não foi possível salvar o número da camisa.');
+            go($retorno);
+        }
         if (($dadosAluno['NUMERO_CAMISA'] === null ? null : (int) $dadosAluno['NUMERO_CAMISA']) !== $numero) {
             $descricaoCamisa = $numero === null
                 ? 'O número de camisa de ' . $dadosAluno['NOME'] . ' foi removido.'
@@ -55,32 +60,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($acao === 'trocar') {
-        $primeiro = (int) ($_POST['primeiro_aluno'] ?? 0);
-        $segundo = (int) ($_POST['segundo_aluno'] ?? 0);
+        $primeiro = positiveId($_POST['primeiro_aluno'] ?? null);
+        $segundo = positiveId($_POST['segundo_aluno'] ?? null);
 
         if ($primeiro <= 0 || $segundo <= 0 || $primeiro === $segundo) {
             flash('error', 'Escolha dois alunos diferentes para fazer a troca.');
             go($retorno);
         }
 
-        $buscar = $db->prepare('SELECT COD_ALUNO, NOME, NUMERO_CAMISA FROM TB_ALUNO WHERE COD_ESCOLINHA = ? AND COD_ALUNO IN (?, ?)');
-        $buscar->execute([$escolinha, $primeiro, $segundo]);
-        $alunos = $buscar->fetchAll();
-        if (count($alunos) !== 2) {
-            flash('error', 'Não foi possível localizar os dois alunos.');
-            go($retorno);
-        }
-
-        $numeros = [];
-        foreach ($alunos as $aluno) {
-            $numeros[(int) $aluno['COD_ALUNO']] = $aluno['NUMERO_CAMISA'];
-        }
-
-        $db->beginTransaction();
         try {
+            $db->beginTransaction();
+            $buscar = $db->prepare('SELECT COD_ALUNO, NOME, NUMERO_CAMISA FROM TB_ALUNO WHERE COD_ESCOLINHA = ? AND COD_ALUNO IN (?, ?) ORDER BY COD_ALUNO FOR UPDATE');
+            $buscar->execute([$escolinha, $primeiro, $segundo]);
+            $alunos = $buscar->fetchAll();
+            if (count($alunos) !== 2) {
+                $db->rollBack();
+                flash('error', 'Não foi possível localizar os dois alunos.');
+                go($retorno);
+            }
+
+            $numeros = [];
+            foreach ($alunos as $aluno) {
+                $numeros[(int) $aluno['COD_ALUNO']] = $aluno['NUMERO_CAMISA'];
+            }
+
             $atualizar = $db->prepare('UPDATE TB_ALUNO SET NUMERO_CAMISA = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
-            $atualizar->execute([$numeros[$segundo], $primeiro, $escolinha]);
+            $atualizar->execute([null, $primeiro, $escolinha]);
             $atualizar->execute([$numeros[$primeiro], $segundo, $escolinha]);
+            $atualizar->execute([$numeros[$segundo], $primeiro, $escolinha]);
             $db->commit();
             if ($numeros[$primeiro] !== $numeros[$segundo]) {
                 $destinatarios = array_merge(notificacaoDestinatariosAluno($db, $escolinha, $primeiro), notificacaoDestinatariosAluno($db, $escolinha, $segundo));
@@ -90,8 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             flash('success', 'Os números das camisas foram trocados.');
         } catch (PDOException $e) {
-            $db->rollBack();
-            flash('error', 'Não foi possível trocar os números das camisas.');
+            if ($db->inTransaction()) $db->rollBack();
+            flash('error', isDuplicateShirt($e) ? 'Um desses números já está com outro aluno ativo.' : 'Não foi possível trocar os números das camisas.');
         }
         go($retorno);
     }

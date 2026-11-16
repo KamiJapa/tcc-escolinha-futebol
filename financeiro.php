@@ -8,16 +8,19 @@ $escola = currentEscolinhaId();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf();
     $acao = $_POST['acao'] ?? '';
-    $id = (int) ($_POST['id'] ?? 0);
+    $id = positiveId($_POST['id'] ?? null);
     try {
+        if ($acao !== 'criar' && !$id) throw new InvalidArgumentException('Informe um lançamento válido.');
         if (in_array($acao, ['criar','editar'], true)) {
             $tipo = $_POST['tipo'] ?? '';
             $categoria = $_POST['categoria'] ?? '';
-            $descricao = trim($_POST['descricao'] ?? '');
-            $valor = str_replace(',', '.', trim($_POST['valor'] ?? ''));
+            $descricao = trim(postString('descricao'));
+            $valor = str_replace(',', '.', trim(postString('valor')));
             $vencimento = $_POST['vencimento'] ?? '';
-            $aluno = (int) ($_POST['aluno'] ?? 0);
-            $mes = $_POST['competencia'] ?? '';
+            $alunoTexto = $_POST['aluno'] ?? '';
+            $aluno = positiveId($alunoTexto);
+            if ($alunoTexto !== '' && !$aluno) throw new InvalidArgumentException('Aluno inválido.');
+            $mes = postString('competencia');
             $competencia = $categoria === 'MENSALIDADE' ? $mes . '-01' : null;
             if (!in_array($tipo, ['RECEITA','DESPESA'], true) || !in_array($categoria, ['MENSALIDADE','MATRICULA','UNIFORME','OUTROS'], true)
                 || $descricao === '' || mb_strlen($descricao) > 150 || !preg_match('/^\d{1,8}(\.\d{1,2})?$/', $valor) || (float) $valor <= 0
@@ -55,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (InvalidArgumentException $error) {
         flash('error', $error->getMessage());
     } catch (PDOException $error) {
-        error_log($error->getMessage());
+        error_log('GestorFC: falha ao gravar lançamento financeiro.');
         flash('error', $error->getCode() === '23000'
             ? 'A mensalidade deste aluno para esta competência já existe.'
             : 'Não foi possível salvar o lançamento. Confira os dados e tente novamente.');
@@ -63,9 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     go('financeiro.php');
 }
 $edit = null;
-if (is_string($_GET['editar'] ?? null) && ctype_digit($_GET['editar'])) {
+$editId = positiveId($_GET['editar'] ?? null);
+if ($editId) {
     $q = $db->prepare("SELECT * FROM TB_FINANCEIRO WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=? AND STATUS='PENDENTE'");
-    $q->execute([(int)$_GET['editar'],$escola]);
+    $q->execute([$editId,$escola]);
     $edit=$q->fetch();
     if (!$edit) { flash('error','Lançamento não disponível para edição.'); go('financeiro.php'); }
 }
@@ -110,6 +114,6 @@ pageStart('Financeiro');
 <div><?php actionButton($edit ? 'Salvar alterações' : 'Registrar lançamento'); ?></div></form></details>
 <div class="financeiro-tabela" tabindex="0" aria-label="Lançamentos financeiros"><table><thead><tr><th>Descrição / Aluno</th><th>Tipo</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
 <?php foreach ($lista as $item): ?><tr><td><?= e($item['DESCRICAO']) ?><br><small><?= e($item['ALUNO'] ?: 'Sem aluno vinculado') ?><?= $item['COMPETENCIA'] ? ' · '.e(date('m/Y',strtotime($item['COMPETENCIA']))) : '' ?></small></td><td><?= e($item['TIPO']) ?></td><td><?= e(date('d/m/Y',strtotime($item['VENCIMENTO']))) ?></td><td><?= reais((int)round((float)$item['VALOR']*100)) ?></td><td><?= $item['STATUS']==='PENDENTE' && $item['VENCIMENTO']<date('Y-m-d') ? 'ATRASADO' : e($item['STATUS']) ?><?php if ($item['DATA_PAGAMENTO']): ?><br><small>Baixa: <?= e(date('d/m/Y',strtotime($item['DATA_PAGAMENTO']))) ?></small><?php endif; ?></td><td>
-<form method="post" class="financeiro-baixa"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="id" value="<?= (int)$item['COD_LANCAMENTO'] ?>"><?php if ($item['STATUS']==='PENDENTE'): ?><a href="financeiro.php?editar=<?= (int)$item['COD_LANCAMENTO'] ?>">Editar</a><label>Data da baixa<input type="date" name="data_pagamento" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required></label><button name="acao" value="pagar">Registrar pagamento</button><button name="acao" value="cancelar" formnovalidate onclick="return confirm('Cancelar este lançamento?')">Cancelar</button><?php elseif ($item['STATUS']==='PAGO'): ?><button name="acao" value="reabrir" onclick="return confirm('Desfazer a baixa e tornar este lançamento pendente?')">Desfazer baixa</button><?php else: ?><input type="hidden" name="cancelado" value="1"><button name="acao" value="reabrir" onclick="return confirm('Reabrir este lançamento cancelado como pendente?')">Reabrir lançamento</button><?php endif; ?></form>
+<form method="post" class="financeiro-baixa"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="id" value="<?= (int)$item['COD_LANCAMENTO'] ?>"><?php if ($item['STATUS']==='PENDENTE'): ?><a href="financeiro.php?editar=<?= (int)$item['COD_LANCAMENTO'] ?>">Editar</a><label>Data da baixa<input type="date" name="data_pagamento" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required></label><button name="acao" value="pagar">Registrar pagamento</button><button name="acao" value="cancelar" formnovalidate data-confirm-click="Cancelar este lançamento?">Cancelar</button><?php elseif ($item['STATUS']==='PAGO'): ?><button name="acao" value="reabrir" data-confirm-click="Desfazer a baixa e tornar este lançamento pendente?">Desfazer baixa</button><?php else: ?><input type="hidden" name="cancelado" value="1"><button name="acao" value="reabrir" data-confirm-click="Reabrir este lançamento cancelado como pendente?">Reabrir lançamento</button><?php endif; ?></form>
 </td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="6">Nenhum lançamento para estes filtros.</td></tr><?php endif; ?></tbody></table></div></div>
 <?php pageEnd(); ?>

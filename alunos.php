@@ -10,7 +10,11 @@ $edit = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf();
     $action = $_POST['action'] ?? '';
-    $id = (int) ($_POST['id'] ?? 0);
+    $id = positiveId($_POST['id'] ?? null);
+    if (!in_array($action, ['create', 'update', 'delete'], true) || ($action !== 'create' && !$id)) {
+        flash('error', 'Operação ou aluno inválido.');
+        go('alunos.php');
+    }
 
     if ($action === 'delete') {
         $stmt = $db->prepare('SELECT COD_USUARIO FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
@@ -37,13 +41,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         go('alunos.php');
     }
 
+    foreach (['nome', 'data_nascimento', 'posicao', 'status', 'observacoes_medicas', 'email_acesso', 'senha_acesso', 'numero_camisa'] as $campo) {
+        if (isset($_POST[$campo]) && !is_string($_POST[$campo])) {
+            flash('error', 'Revise os campos do aluno.');
+            go('alunos.php');
+        }
+    }
+
+    $numeroTexto = trim(postString('numero_camisa'));
+    $numeroCamisa = $numeroTexto === '' ? null : filter_var($numeroTexto, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 99]]);
+    if ($numeroCamisa === false) {
+        flash('error', 'Informe um número de camisa de 0 a 99.');
+        go('alunos.php' . ($id ? '?editar=' . $id : ''));
+    }
+
     $nome = trim($_POST['nome'] ?? '');
     $nascimento = $_POST['data_nascimento'] ?? '';
-    $responsavel = (int) ($_POST['cod_responsavel'] ?? 0);
+    $responsavel = positiveId($_POST['cod_responsavel'] ?? null);
     $posicao = trim($_POST['posicao'] ?? '');
     $status = $_POST['status'] ?? 'ATIVO';
     $observacoes = trim($_POST['observacoes_medicas'] ?? '');
-    if (mb_strlen($nome)>100 || mb_strlen($posicao)>30 || mb_strlen($observacoes)>65535) { flash('error','Nome (até 100 caracteres), posição (até 30) ou observações excedem o limite.'); go('alunos.php'); }
+    if (mb_strlen($nome)>100 || mb_strlen($posicao)>30 || strlen($observacoes)>65535) { flash('error','Nome (até 100 caracteres), posição (até 30) ou observações excedem o limite.'); go('alunos.php'); }
     $emailAluno = trim($_POST['email_acesso'] ?? '');
     $senhaAluno = (string) ($_POST['senha_acesso'] ?? '');
 
@@ -66,26 +84,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            AND LOWER(TRIM(NOME)) = LOWER(TRIM(?)) AND DATA_NASCIMENTO = ?
            AND COD_ALUNO <> ? LIMIT 1'
     );
-    $duplicado->execute([$escolinha, $responsavel, $nome, $nascimento, $id]);
+    $duplicado->execute([$escolinha, $responsavel, $nome, $nascimento, $id ?? 0]);
     if ($duplicado->fetchColumn()) {
         flash('error', 'Este responsável já tem um aluno com o mesmo nome e data de nascimento.');
         go('alunos.php' . ($id ? '?editar=' . $id : ''));
     }
 
-    if (($emailAluno !== '' && !filter_var($emailAluno, FILTER_VALIDATE_EMAIL)) || ($emailAluno !== '' && $senhaAluno !== '' && strlen($senhaAluno) < 6) || ($emailAluno === '' && $senhaAluno !== '')) {
-        flash('error', 'Para criar ou atualizar o acesso do aluno, informe um e-mail válido e uma senha de ao menos 6 caracteres.');
+    if (($emailAluno !== '' && (!filter_var($emailAluno, FILTER_VALIDATE_EMAIL) || strlen($emailAluno) > 100)) || ($emailAluno !== '' && $senhaAluno !== '' && (strlen($senhaAluno) < 6 || strlen($senhaAluno) > 72 || strpos($senhaAluno, "\0") !== false)) || ($emailAluno === '' && $senhaAluno !== '')) {
+        flash('error', 'Para criar ou atualizar o acesso do aluno, informe um e-mail válido e uma senha de 6 a 72 bytes.');
         go('alunos.php' . ($id ? '?editar=' . $id : ''));
     }
 
     try {
         $db->beginTransaction();
         if ($action === 'create') {
-            $stmt = $db->prepare('INSERT INTO TB_ALUNO (COD_ESCOLINHA, COD_RESPONSAVEL, NOME, DATA_NASCIMENTO, POSICAO, STATUS, DATA_MATRICULA, OBSERVACOES_MEDICAS) VALUES (?, ?, ?, ?, ?, ?, CURDATE(), ?)');
-            $stmt->execute([$escolinha, $responsavel, $nome, $nascimento, $posicao ?: 'Não definida', $status, $observacoes ?: null]);
+            $stmt = $db->prepare('INSERT INTO TB_ALUNO (COD_ESCOLINHA, COD_RESPONSAVEL, NOME, DATA_NASCIMENTO, POSICAO, STATUS, DATA_MATRICULA, OBSERVACOES_MEDICAS, NUMERO_CAMISA) VALUES (?, ?, ?, ?, ?, ?, CURDATE(), ?, ?)');
+            $stmt->execute([$escolinha, $responsavel, $nome, $nascimento, $posicao ?: 'Não definida', $status, $observacoes === '' ? null : $observacoes, $numeroCamisa]);
             $id = (int) $db->lastInsertId();
         } elseif ($action === 'update') {
-            $stmt = $db->prepare('UPDATE TB_ALUNO SET COD_RESPONSAVEL = ?, NOME = ?, DATA_NASCIMENTO = ?, POSICAO = ?, STATUS = ?, OBSERVACOES_MEDICAS = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
-            $stmt->execute([$responsavel, $nome, $nascimento, $posicao ?: 'Não definida', $status, $observacoes ?: null, $id, $escolinha]);
+            $check = $db->prepare('SELECT NUMERO_CAMISA FROM TB_ALUNO WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ? FOR UPDATE');
+            $check->execute([$id, $escolinha]);
+            $existing = $check->fetch();
+            if (!$existing) throw new InvalidArgumentException('Aluno não encontrado nesta escolinha.');
+            if (!array_key_exists('numero_camisa', $_POST)) $numeroCamisa = $existing['NUMERO_CAMISA'];
+            $stmt = $db->prepare('UPDATE TB_ALUNO SET COD_RESPONSAVEL = ?, NOME = ?, DATA_NASCIMENTO = ?, POSICAO = ?, STATUS = ?, OBSERVACOES_MEDICAS = ?, NUMERO_CAMISA = ? WHERE COD_ALUNO = ? AND COD_ESCOLINHA = ?');
+            $stmt->execute([$responsavel, $nome, $nascimento, $posicao ?: 'Não definida', $status, $observacoes === '' ? null : $observacoes, $numeroCamisa, $id, $escolinha]);
         }
 
         if ($emailAluno !== '') {
@@ -120,15 +143,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         go('alunos.php' . ($id ? '?editar=' . $id : ''));
     } catch (PDOException $e) {
         if ($db->inTransaction()) $db->rollBack();
-        flash('error', 'Não foi possível salvar os dados ou o acesso. Verifique os campos e se o e-mail já está em uso.');
+        flash('error', isDuplicateShirt($e)
+            ? 'Esse número já está com outro aluno ativo nesta escolinha.'
+            : 'Não foi possível salvar os dados ou o acesso. Verifique os campos e se o e-mail já está em uso.');
         go('alunos.php' . ($id ? '?editar=' . $id : ''));
     }
     go('alunos.php');
 }
 
 if (isset($_GET['editar'])) {
+    $editId = positiveId($_GET['editar']);
+    if (!$editId) { flash('error', 'Aluno inválido.'); go('alunos.php'); }
     $stmt = $db->prepare('SELECT a.*, u.EMAIL AS EMAIL_ACESSO FROM TB_ALUNO a LEFT JOIN TB_USUARIO u ON u.COD_USUARIO = a.COD_USUARIO AND u.PERFIL = "ALUNO" WHERE a.COD_ALUNO = ? AND a.COD_ESCOLINHA = ?');
-    $stmt->execute([(int) $_GET['editar'], $escolinha]);
+    $stmt->execute([$editId, $escolinha]);
     $edit = $stmt->fetch();
     if (!$edit) {
         flash('error', 'Aluno não encontrado.');
@@ -158,6 +185,7 @@ $value = function ($field, $default = '') use ($edit) { return e($edit[$field] ?
         <label>Data de nascimento<input required type="date" name="data_nascimento" value="<?= $value('DATA_NASCIMENTO') ?>"></label>
         <label>Responsável<select required name="cod_responsavel"><option value="">Selecione</option><?php foreach ($responsaveis as $r): ?><option value="<?= (int) $r['COD_RESPONSAVEL'] ?>" <?= ($edit['COD_RESPONSAVEL'] ?? '') == $r['COD_RESPONSAVEL'] ? 'selected' : '' ?>><?= e($r['NOME']) ?></option><?php endforeach; ?></select></label>
         <label>Posição<input name="posicao" value="<?= $value('POSICAO', 'Meio-Campo') ?>"></label>
+        <label>Número da camisa<input type="number" name="numero_camisa" min="0" max="99" value="<?= e($edit['NUMERO_CAMISA'] ?? '') ?>"></label>
         <label>Situação<select name="status"><?php foreach (['ATIVO', 'INATIVO', 'PENDENTE'] as $status): ?><option <?= ($edit['STATUS'] ?? 'ATIVO') === $status ? 'selected' : '' ?>><?= $status ?></option><?php endforeach; ?></select></label>
         <fieldset class="acesso-aluno"><legend>Acesso do aluno</legend><p>Opcional. O aluno poderá entrar com este e-mail e acompanhar seu perfil e criar metas.</p><label>E-mail de acesso<input type="email" name="email_acesso" value="<?= e($edit['EMAIL_ACESSO'] ?? '') ?>" autocomplete="off"></label><label><?= !empty($edit['EMAIL_ACESSO']) ? 'Nova senha (deixe vazia para manter)' : 'Senha inicial' ?><input type="password" name="senha_acesso" minlength="6" autocomplete="new-password" <?= empty($edit['EMAIL_ACESSO']) ? '' : '' ?>></label></fieldset>
         <label>Observações médicas<textarea name="observacoes_medicas"><?= $value('OBSERVACOES_MEDICAS') ?></textarea></label>
@@ -173,12 +201,12 @@ $value = function ($field, $default = '') use ($edit) { return e($edit[$field] ?
         <button type="button" class="acao-rapida" data-url="camisas.php?mini=1" data-titulo="Camisas dos alunos"><span>👕</span>Camisas</button>
     </div>
 </div>
-<section class="lista-alunos"><div class="tabela-alunos"><table><thead><tr><th>Aluno</th><th>Responsável</th><th>Situação</th><th>Turmas</th><th>Ações</th></tr></thead><tbody><?php foreach ($lista as $aluno): ?><tr><td><?= e($aluno['NOME']) ?></td><td><?= e($aluno['RESPONSAVEL']) ?></td><td><?= e($aluno['STATUS']) ?></td><td><?= (int) $aluno['TURMAS_ATIVAS'] ?></td><td><button type="button" class="acao-tabela" data-url="alunos.php?mini=1&amp;editar=<?= (int) $aluno['COD_ALUNO'] ?>" data-titulo="Editar aluno">Editar</button><form method="post" onsubmit="return confirm('Alunos com histórico não podem ser excluídos. O sistema bloqueará a exclusão e orientará a inativação do cadastro.');"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $aluno['COD_ALUNO'] ?>"><button>Excluir</button></form></td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="5">Nenhum aluno cadastrado.</td></tr><?php endif; ?></tbody></table></div></section>
+<section class="lista-alunos"><div class="tabela-alunos"><table><thead><tr><th>Aluno</th><th>Responsável</th><th>Situação</th><th>Turmas</th><th>Ações</th></tr></thead><tbody><?php foreach ($lista as $aluno): ?><tr><td><?= e($aluno['NOME']) ?></td><td><?= e($aluno['RESPONSAVEL']) ?></td><td><?= e($aluno['STATUS']) ?></td><td><?= (int) $aluno['TURMAS_ATIVAS'] ?></td><td><button type="button" class="acao-tabela" data-url="alunos.php?mini=1&amp;editar=<?= (int) $aluno['COD_ALUNO'] ?>" data-titulo="Editar aluno">Editar</button><form method="post" data-confirm-submit="Alunos com histórico não podem ser excluídos. O sistema bloqueará a exclusão e orientará a inativação do cadastro."><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int) $aluno['COD_ALUNO'] ?>"><button>Excluir</button></form></td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="5">Nenhum aluno cadastrado.</td></tr><?php endif; ?></tbody></table></div></section>
 <dialog class="modal-cadastro" id="modalAlunos" aria-labelledby="tituloModalAlunos">
     <header class="modal-cabecalho"><h2 id="tituloModalAlunos">Alunos</h2><button type="button" class="fechar-modal" id="fecharModalAlunos" aria-label="Fechar">×</button></header>
     <iframe id="iframeAlunos" title="Cadastro de aluno ou gestão de camisas"></iframe>
 </dialog>
-<script>
+<script nonce="<?= cspNonce() ?>">
     const modalAlunos = document.getElementById('modalAlunos');
     const iframeAlunos = document.getElementById('iframeAlunos');
     const tituloModalAlunos = document.getElementById('tituloModalAlunos');
