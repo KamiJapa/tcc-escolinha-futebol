@@ -538,6 +538,7 @@ button { cursor: pointer; }
 }
 
 /* Avaliações vinculadas aos treinos */
+.pagina-aulas { height: auto; min-height: 100vh; overflow: visible; }
 .pagina-aulas .estrutura-sistema { height: auto; min-height: calc(100vh - 72px); overflow: visible; }
 .pagina-aulas .conteudo-sistema { display: block; overflow: visible; }
 .pagina-aulas .conteudo-sistema > section:first-of-type { display: block; margin-bottom: 14px; }
