@@ -1,4 +1,5 @@
 <?php
+// Atribui e troca números de camisa, verificando a disponibilidade entre alunos ativos.
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/notificacoes_helpers.php';

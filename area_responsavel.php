@@ -1,4 +1,5 @@
 <?php
+// Mostra a frequência, as notas e os avisos dos alunos vinculados ao responsável conectado.
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/includes/avaliacao_helpers.php';
 require_once __DIR__ . '/includes/responsavel_helpers.php';
@@ -21,7 +22,7 @@ function familiaData($data) { return date('d/m/Y', strtotime($data)); }
 pageStart('Meus filhos');
 ?>
 <div class="familia">
-    <header class="familia-heading"><div><h2>Acompanhe seu filho</h2><p>Cada treino, uma nova conquista. Veja como ele está evoluindo.</p></div><a href="notificacoes.php">Ver notificações →</a></header>
+    <header class="familia-heading"><div><h2>Acompanhe seu filho</h2></div><a href="notificacoes.php">Ver notificações →</a></header>
     <?php if (!$filho): ?>
         <section class="familia-card"><h3>Nenhum atleta vinculado</h3><p>Peça à secretaria da sua escolinha para vincular seu cadastro ao do seu filho.</p></section>
     <?php else: ?>

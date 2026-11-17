@@ -1,4 +1,5 @@
 <?php
+// Exibe treinos e jogos das turmas que o usuário pode consultar.
 require_once __DIR__ . '/includes/layout.php';
 // Visão individual com vínculo validado no servidor.
 if (hasRole(['RESPONSAVEL'])) {
@@ -117,7 +118,7 @@ $nomesDias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 pageStart('Calendário');
 ?>
 <div class="calendario-page">
-    <header class="calendario-hero"><div><p class="calendario-kicker"><span></span> AGENDA DA ESCOLINHA</p><h2>Treinos no calendário.</h2><p>Planejamento compartilhado com as pessoas relacionadas à turma, a partir de um único registro por treino.</p></div><span class="calendario-hero-icon" aria-hidden="true">▦</span></header>
+    <header class="calendario-hero"><div><h2>Agenda de treinos</h2></div><span class="calendario-hero-icon" aria-hidden="true">▦</span></header>
 
     <section class="calendario-toolbar">
         <div class="calendario-navegacao-mes"><a href="calendario.php?mes=<?= e($mesAnterior) ?>&amp;tipo=<?= e($filtroTipo) ?>&amp;turma=<?= $filtroTurma ?>" aria-label="Mês anterior">‹</a><div><strong><?= e($nomesMeses[(int) $inicioMes->format('n')]) ?></strong><span><?= e($inicioMes->format('Y')) ?></span></div><a href="calendario.php?mes=<?= e($mesProximo) ?>&amp;tipo=<?= e($filtroTipo) ?>&amp;turma=<?= $filtroTurma ?>" aria-label="Próximo mês">›</a></div>

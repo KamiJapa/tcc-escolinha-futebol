@@ -1,4 +1,5 @@
 <?php
+// Registra as notas da aula conforme os fundamentos selecionados para o treino.
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/includes/avaliacao_helpers.php';
@@ -10,7 +11,7 @@ $escolinha = currentEscolinhaId();
 $professor = hasRole(['PROFESSOR']) ? (int) $_SESSION['user_id'] : null;
 $tiposTreino = avaliacaoTiposTreino();
 $catalogo = avaliacaoCatalogoAtributos();
-$idAula = positiveId($_GET['aula'] ?? $_POST['id_aula'] ?? null) ?? 0;
+$idAula = (int) ($_GET['aula'] ?? $_POST['id_aula'] ?? 0);
 $aulaSelecionada = null;
 $alunos = [];
 $atributosAtivos = [];
@@ -212,20 +213,20 @@ pageStart('Avaliações');
 ?>
 <div class="avaliacao-page">
     <?php if (!$aulaSelecionada): ?>
-        <header class="avaliacao-hero"><div><p class="avaliacao-eyebrow"><span></span> DESENVOLVIMENTO EM CAMPO</p><h2>Avaliações por treino</h2><p>Lance notas durante a sessão, acompanhe o Overall semanal e mantenha cada avaliação vinculada ao seu treino.</p></div><div class="avaliacao-hero-icon" aria-hidden="true">↗</div></header>
+        <header class="avaliacao-hero"><div><h2>Avaliações por treino</h2></div><div class="avaliacao-hero-icon" aria-hidden="true">↗</div></header>
 
         <section class="avaliacao-semana">
-            <div class="avaliacao-section-heading"><div><p class="avaliacao-eyebrow">CONSOLIDAÇÃO SEMANAL</p><h2>Evolução do Overall</h2></div><span class="avaliacao-periodo">Últimas 8 semanas</span></div>
+            <div class="avaliacao-section-heading"><div><h2>Evolução do Overall</h2></div><span class="avaliacao-periodo">Últimas 8 semanas</span></div>
             <div class="avaliacao-semana-grid">
                 <article><span class="avaliacao-metrica-icone">◎</span><div><small>Overall desta semana</small><strong><?= $dadosSemanaAtual && $dadosSemanaAtual['OVERALL_MEDIO'] !== null ? e(number_format((float) $dadosSemanaAtual['OVERALL_MEDIO'], 1, ',', '.')) : '—' ?><em>/10</em></strong><span><?= $dadosSemanaAtual ? (int) $dadosSemanaAtual['NOTAS'] . ' notas em ' . (int) $dadosSemanaAtual['TREINOS'] . ' treinos' : 'Nenhuma nota consolidada ainda' ?></span></div></article>
                 <article><span class="avaliacao-metrica-icone azul">↗</span><div><small>Variação contra semana anterior</small><strong class="<?= $evolucaoSemanal !== null && $evolucaoSemanal < 0 ? 'negativo' : '' ?>"><?= $evolucaoSemanal === null ? '—' : ($evolucaoSemanal > 0 ? '+' : '') . e(number_format($evolucaoSemanal, 1, ',', '.')) ?><em><?= $evolucaoSemanal === null ? '' : ' pts' ?></em></strong><span><?= $dadosSemanaAnterior ? 'Comparação baseada em notas dos treinos' : 'Aguardando duas semanas com avaliações' ?></span></div></article>
-                <article><span class="avaliacao-metrica-icone violeta">⚽</span><div><small>Treinos avaliados</small><strong><?= $dadosSemanaAtual ? (int) $dadosSemanaAtual['TREINOS'] : 0 ?></strong><span>nesta semana</span></div></article>
+                <article><div><small>Treinos avaliados</small><strong><?= $dadosSemanaAtual ? (int) $dadosSemanaAtual['TREINOS'] : 0 ?></strong><span>nesta semana</span></div></article>
             </div>
             <?php if ($semanas): ?><div class="avaliacao-historico-semanas"><strong>Histórico semanal</strong><div><?php foreach (array_reverse($semanas) as $semana): ?><span><small><?= e(date('d/m', strtotime($semana['INICIO_SEMANA']))) ?></small><b data-chart-height="<?= $semana['OVERALL_MEDIO'] === null ? '4' : e(max(4, (float) $semana['OVERALL_MEDIO'] * 9)) ?>" title="Overall médio <?= $semana['OVERALL_MEDIO'] === null ? 'sem notas' : e(number_format((float) $semana['OVERALL_MEDIO'], 1, ',', '.')) ?>"></b><em><?= $semana['OVERALL_MEDIO'] === null ? '—' : e(number_format((float) $semana['OVERALL_MEDIO'], 1, ',', '.')) ?></em></span><?php endforeach; ?></div></div><?php endif; ?>
         </section>
 
         <section class="avaliacao-treinos-section">
-            <div class="avaliacao-section-heading"><div><p class="avaliacao-eyebrow">SESSÕES</p><h2>Histórico de treinos</h2><p>Selecione um treino para lançar ou editar as avaliações dos atletas.</p></div><a class="avaliacao-voltar-treinos" href="aulas.php">Gerenciar treinos <span aria-hidden="true">↗</span></a></div>
+            <div class="avaliacao-section-heading"><div><h2>Histórico de treinos</h2><p>Selecione um treino para lançar ou editar as avaliações dos atletas.</p></div><a class="avaliacao-voltar-treinos" href="aulas.php">Gerenciar treinos <span aria-hidden="true">↗</span></a></div>
             <div class="avaliacao-treinos-lista">
                 <?php foreach ($treinos as $treino): $tipoNome = $tiposTreino[$treino['TIPO_TREINO']]['nome'] ?? 'Tipo não definido'; ?>
                     <article class="avaliacao-treino-item"><div class="avaliacao-treino-data"><strong><?= e(date('d', strtotime($treino['DATA_AULA']))) ?></strong><span><?= e(date('M/Y', strtotime($treino['DATA_AULA']))) ?></span></div><div class="avaliacao-treino-info"><strong><?= e($treino['TEMA_TREINO']) ?></strong><span><?= e($treino['TURMA']) ?> · <?= e($tipoNome) ?></span></div><span class="avaliacao-treino-progresso"><?= (int) $treino['COM_OVERALL'] ?> Overall</span><a class="botao-avaliar-treino" href="avaliacoes.php?aula=<?= (int) $treino['COD_AULA'] ?>"><?= (int) $treino['AVALIACOES'] ? 'Editar' : 'Avaliar' ?><span aria-hidden="true">↗</span></a></article>
@@ -245,7 +246,7 @@ pageStart('Avaliações');
                 ];
             }
         ?>
-        <header class="avaliacao-session-hero"><a class="avaliacao-voltar-link" href="avaliacoes.php">← Todas as avaliações</a><div><p class="avaliacao-eyebrow"><span></span> AVALIAÇÃO EM CAMPO</p><h2><?= e($aulaSelecionada['TEMA_TREINO']) ?></h2><p><?= e($aulaSelecionada['TURMA']) ?> · <?= e($aulaSelecionada['FAIXA_ETARIA']) ?> · <?= e(date('d/m/Y', strtotime($aulaSelecionada['DATA_AULA']))) ?></p></div><span class="avaliacao-session-badge"><?= count($alunos) ?> atletas</span></header>
+        <header class="avaliacao-session-hero"><a class="avaliacao-voltar-link" href="avaliacoes.php">← Todas as avaliações</a><div><h2><?= e($aulaSelecionada['TEMA_TREINO']) ?></h2><p><?= e($aulaSelecionada['TURMA']) ?> · <?= e($aulaSelecionada['FAIXA_ETARIA']) ?> · <?= e(date('d/m/Y', strtotime($aulaSelecionada['DATA_AULA']))) ?></p></div><span class="avaliacao-session-badge"><?= count($alunos) ?> atletas</span></header>
 
         <form method="post" class="avaliacao-lancamento-form" id="formAvaliacoes">
             <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
@@ -257,9 +258,9 @@ pageStart('Avaliações');
                 <div class="avaliacao-type-readonly"><span>FOCO DO TREINO</span><strong><?= e($tiposTreino[$aulaSelecionada['TIPO_TREINO']]['nome'] ?? 'Tipo não definido') ?></strong></div>
             <?php endif; ?>
 
-            <section class="avaliacao-atributos-panel" id="painelAtributosPersonalizados" <?= $aulaSelecionada['TIPO_TREINO'] === 'PERSONALIZADO' ? '' : 'hidden' ?>><div><p class="avaliacao-eyebrow">FOCO DA AVALIAÇÃO</p><h3>Atributos avaliáveis</h3><span>Os atributos marcados recebem nota neste treino. Os demais permanecem como “Não avaliado”.</span></div><div class="avaliacao-check-grid"><?php foreach ($catalogo as $codigo => $nome): ?><label><input type="checkbox" name="atributos_avaliaveis[]" value="<?= e($codigo) ?>" <?= in_array($codigo, $atributosAtivos, true) ? 'checked' : '' ?>><span><?= e($nome) ?></span></label><?php endforeach; ?></div></section>
+            <section class="avaliacao-atributos-panel" id="painelAtributosPersonalizados" <?= $aulaSelecionada['TIPO_TREINO'] === 'PERSONALIZADO' ? '' : 'hidden' ?>><div><h3>Atributos avaliáveis</h3><span>Os atributos marcados recebem nota neste treino. Os demais permanecem como “Não avaliado”.</span></div><div class="avaliacao-check-grid"><?php foreach ($catalogo as $codigo => $nome): ?><label><input type="checkbox" name="atributos_avaliaveis[]" value="<?= e($codigo) ?>" <?= in_array($codigo, $atributosAtivos, true) ? 'checked' : '' ?>><span><?= e($nome) ?></span></label><?php endforeach; ?></div></section>
 
-            <div class="avaliacao-roster-heading"><div><p class="avaliacao-eyebrow">EQUIPE</p><h3>Avaliações dos atletas</h3><span>Notas de 0 a 10 · Campo em branco = não avaliado · 0 é uma nota válida</span></div><span><?= count($alunos) ?> atletas</span></div>
+            <div class="avaliacao-roster-heading"><div><h3>Avaliações dos atletas</h3><span>Notas de 0 a 10 · Campo em branco = não avaliado · 0 é uma nota válida</span></div><span><?= count($alunos) ?> atletas</span></div>
 
             <?php if ($alunos): ?>
                 <div class="avaliacao-atletas-lista">

@@ -1,4 +1,5 @@
 <?php
+// Encerra a sessão após a confirmação do formulário de saída.
 // logout.php
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');

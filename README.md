@@ -46,7 +46,7 @@ O link **Cadastre-se** cria uma conta de responsável. Depois de criar a conta, 
 
 ### Atualizar um banco já existente
 
-Para manter os dados atuais, não reimporte `database.sql`. Execute uma vez `migration_notificacoes.sql` no banco usado pelo sistema. Ela cria a tabela de notificações por escolinha e conta. Se o banco ainda não tiver `TB_FINANCEIRO`, execute também `migration_financeiro.sql` para instalar a estrutura usada pelo módulo financeiro.
+Em uma instalação existente, use as migrações para preservar os dados. Execute uma vez `migration_notificacoes.sql` no banco usado pelo sistema. Ela cria a tabela de notificações por escolinha e conta. Se o banco ainda não tiver `TB_FINANCEIRO`, execute também `migration_financeiro.sql` para instalar a estrutura usada pelo módulo financeiro. Em bancos que já têm a tabela financeira, execute também `migration_mensalidades_situacao.sql` para habilitar as situações Atrasada e Não paga.
 
 Execute `migration_login_tentativas.sql` e `migration_camisa_ativa.sql` no banco
 selecionado. A migração de camisas lista duplicatas ativas por escolinha e retorna
@@ -91,7 +91,7 @@ php tests/test_rate_limit_purge.php
 ```
 
 Para o teste da limpeza, configure `TEST_DB_DSN` no formato
-`mysql:host=127.0.0.1;port=33367;dbname=gestorfc_codex_test_exemplo;charset=utf8mb4`,
+`mysql:host=127.0.0.1;port=33367;dbname=gestorfc_test_demo;charset=utf8mb4`,
 com o esquema carregado nesse banco descartável. Use `TEST_DB_USER` e
 `TEST_DB_PASS` conforme a instância de teste.
 
@@ -138,7 +138,7 @@ Não há migração adicional: utiliza as tabelas e migrações já existentes.
 Teste de regressão (em um banco de teste com o schema aplicado):
 
 ```powershell
-$env:TEST_DB_DSN = 'mysql:host=127.0.0.1;port=33367;dbname=gestorfc_codex_test_exemplo;charset=utf8mb4'
+$env:TEST_DB_DSN = 'mysql:host=127.0.0.1;port=33367;dbname=gestorfc_test_demo;charset=utf8mb4'
 php tests/responsavel_scope.php
 ```
 

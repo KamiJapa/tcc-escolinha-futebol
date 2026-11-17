@@ -1,4 +1,5 @@
 <?php
+// Organiza os avisos da conta e marca os itens consultados como lidos.
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
 checkRole(['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO']);
@@ -73,7 +74,7 @@ $rotulos = notificacoesTipos();
 pageStart('Notificações');
 ?>
 <div class="notificacoes-page">
-    <header class="notificacoes-hero"><div><p class="notificacoes-kicker">CENTRAL DA ESCOLINHA</p><h2>Fique por dentro do que acontece.</h2><p>Treinos, avaliações, jogos e atualizações importantes da sua escolinha.</p></div><span class="notificacoes-hero-icone" aria-hidden="true">♧</span></header>
+    <header class="notificacoes-hero"><div><h2>Avisos da escolinha</h2></div><span class="notificacoes-hero-icone" aria-hidden="true">♧</span></header>
     <section class="notificacoes-painel" aria-label="Central de notificações">
         <div class="notificacoes-toolbar"><div><h3>Suas notificações</h3><p><?= $totalNaoLidas ?> não lidas <span>·</span> <?= $total ?> no total</p></div><?php if ($totalNaoLidas): ?><form method="post"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="acao" value="marcar_todas"><input type="hidden" name="filtro" value="<?= e($filtro) ?>"><button class="notificacao-acao-principal" type="submit">Marcar todas como lidas</button></form><?php endif; ?></div>
         <nav class="notificacoes-filtros" aria-label="Filtrar notificações"><?php foreach (['todas' => 'Todas', 'nao-lidas' => 'Não lidas', 'lidas' => 'Lidas'] as $chave => $nome): ?><a class="<?= $filtro === $chave ? 'ativo' : '' ?>" href="notificacoes.php?filtro=<?= e($chave) ?>" <?= $filtro === $chave ? 'aria-current="page"' : '' ?>><?= e($nome) ?><?php if ($chave === 'nao-lidas' && $totalNaoLidas): ?><span><?= $totalNaoLidas ?></span><?php endif; ?></a><?php endforeach; ?></nav>

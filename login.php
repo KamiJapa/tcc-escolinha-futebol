@@ -1,4 +1,5 @@
 <?php
+// Valida as credenciais e inicia a sessão. Os atalhos aparecem quando o modo de demonstração está ativo.
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/helpers.php';
 
@@ -28,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Entrar - GestorFC</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <link rel="stylesheet" href="assets/css/tailwind.css">
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -55,7 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button class="botao-principal w-full rounded-xl bg-emerald-600 px-4 py-3 font-bold text-white shadow-lg transition hover:bg-emerald-500" type="submit">Entrar</button>
         </form>
 
-        <p class="login-cadastro-link mt-5 text-center text-sm text-slate-300">Ainda não tem uma conta? <a class="font-semibold text-emerald-400 hover:text-emerald-300" href="cadastro.php">Cadastre-se</a></p>
 
         <?php if ($mostrarDemo): ?>
         <section class="login-testes mt-6 border-t border-slate-700 pt-4 text-sm text-slate-300">
@@ -64,8 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="grid gap-2 sm:grid-cols-2">
                 <button class="conta-teste" type="button" data-conta="admin@teste.com"><strong>Administrador</strong><span>admin@teste.com</span></button>
                 <button class="conta-teste" type="button" data-conta="secretaria@teste.com"><strong>Secretaria</strong><span>secretaria@teste.com</span></button>
-                <button class="conta-teste" type="button" data-conta="professor@teste.com"><strong>Professor</strong><span>professor@teste.com</span></button>
-                <button class="conta-teste" type="button" data-conta="responsavel@teste.com"><strong>Responsável</strong><span>responsavel@teste.com</span></button>
+                <button class="conta-teste" type="button" data-conta="professor@teste.com"><strong>Professor teste</strong><span>professor@teste.com</span></button>
+                <button class="conta-teste" type="button" data-conta="responsavel@teste.com"><strong>Responsável teste</strong><span>responsavel@teste.com</span></button>
             </div>
         </section>
         <?php endif; ?>

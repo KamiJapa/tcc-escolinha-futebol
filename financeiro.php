@@ -1,4 +1,5 @@
 <?php
+// Registra receitas e despesas e controla a baixa dos lançamentos.
 require_once __DIR__ . '/includes/layout.php';
 require_once __DIR__ . '/config/database.php';
 checkRole(['ADMIN', 'SECRETARIA']);
@@ -8,19 +9,16 @@ $escola = currentEscolinhaId();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf();
     $acao = $_POST['acao'] ?? '';
-    $id = positiveId($_POST['id'] ?? null);
+    $id = (int) ($_POST['id'] ?? 0);
     try {
-        if ($acao !== 'criar' && !$id) throw new InvalidArgumentException('Informe um lançamento válido.');
         if (in_array($acao, ['criar','editar'], true)) {
             $tipo = $_POST['tipo'] ?? '';
             $categoria = $_POST['categoria'] ?? '';
-            $descricao = trim(postString('descricao'));
-            $valor = str_replace(',', '.', trim(postString('valor')));
+            $descricao = trim($_POST['descricao'] ?? '');
+            $valor = str_replace(',', '.', trim($_POST['valor'] ?? ''));
             $vencimento = $_POST['vencimento'] ?? '';
-            $alunoTexto = $_POST['aluno'] ?? '';
-            $aluno = positiveId($alunoTexto);
-            if ($alunoTexto !== '' && !$aluno) throw new InvalidArgumentException('Aluno inválido.');
-            $mes = postString('competencia');
+            $aluno = (int) ($_POST['aluno'] ?? 0);
+            $mes = $_POST['competencia'] ?? '';
             $competencia = $categoria === 'MENSALIDADE' ? $mes . '-01' : null;
             if (!in_array($tipo, ['RECEITA','DESPESA'], true) || !in_array($categoria, ['MENSALIDADE','MATRICULA','UNIFORME','OUTROS'], true)
                 || $descricao === '' || mb_strlen($descricao) > 150 || !preg_match('/^\d{1,8}(\.\d{1,2})?$/', $valor) || (float) $valor <= 0
@@ -33,8 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!$q->fetchColumn()) throw new InvalidArgumentException('Aluno inválido.');
             }
             if ($acao === 'editar') {
-                $q = $db->prepare("UPDATE TB_FINANCEIRO SET COD_ALUNO=?,TIPO=?,CATEGORIA=?,DESCRICAO=?,COMPETENCIA=?,VALOR=?,VENCIMENTO=? WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=? AND STATUS='PENDENTE'");
-                $q->execute([$aluno ?: null,$tipo,$categoria,$descricao,$competencia,$valor,$vencimento,$id,$escola]);
+                $q = $db->prepare("UPDATE TB_FINANCEIRO SET COD_ALUNO=?,TIPO=?,CATEGORIA=?,DESCRICAO=?,COMPETENCIA=?,VALOR=?,VENCIMENTO=?,STATUS=CASE WHEN ?='MENSALIDADE' THEN STATUS ELSE 'PENDENTE' END WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=? AND STATUS IN ('PENDENTE','ATRASADO','NAO_PAGO')");
+                $q->execute([$aluno ?: null,$tipo,$categoria,$descricao,$competencia,$valor,$vencimento,$categoria,$id,$escola]);
                 if (!$q->rowCount()) throw new InvalidArgumentException('Sem alterações ou lançamento indisponível. Só é possível editar lançamentos pendentes.');
                 flash('success','Lançamento atualizado.');
             } else {
@@ -48,9 +46,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $novo = ['pagar'=>'PAGO','reabrir'=>'PENDENTE','cancelar'=>'CANCELADO'][$acao];
             $anterior = ['pagar'=>'PENDENTE','reabrir'=>'PAGO','cancelar'=>'PENDENTE'][$acao];
             if ($acao==='reabrir' && ($_POST['cancelado'] ?? '')==='1') $anterior='CANCELADO';
-            $q = $db->prepare('UPDATE TB_FINANCEIRO SET STATUS=?,DATA_PAGAMENTO=? WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=? AND STATUS=?');
-            $q->execute([$novo,$data,$id,$escola,$anterior]);
-            if (!$q->rowCount()) throw new InvalidArgumentException('Lançamento não encontrado ou já atualizado. Recarregue a página.');
+            $sql = 'UPDATE TB_FINANCEIRO SET STATUS=?,DATA_PAGAMENTO=? WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=?';
+            $parametros = [$novo, $data, $id, $escola];
+            if ($anterior === 'PENDENTE') {
+                $sql .= " AND STATUS IN ('PENDENTE','ATRASADO','NAO_PAGO')";
+            } else {
+                $sql .= ' AND STATUS=?';
+                $parametros[] = $anterior;
+            }
+            if ($acao === 'pagar') {
+                $sql .= " AND (CATEGORIA <> 'MENSALIDADE' OR COMPETENCIA <= ?)";
+                $parametros[] = $data;
+            }
+            $q = $db->prepare($sql);
+            $q->execute($parametros);
+            if (!$q->rowCount()) {
+                if ($acao === 'pagar') {
+                    $comp = $db->prepare("SELECT COMPETENCIA FROM TB_FINANCEIRO WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=? AND STATUS IN ('PENDENTE','ATRASADO','NAO_PAGO') AND CATEGORIA='MENSALIDADE'");
+                    $comp->execute([$id, $escola]);
+                    $mes = $comp->fetchColumn();
+                    if ($mes && $data < $mes) {
+                        throw new InvalidArgumentException('A data do pagamento não pode ser anterior ao mês da mensalidade.');
+                    }
+                }
+                throw new InvalidArgumentException('Lançamento não encontrado ou já atualizado. Recarregue a página.');
+            }
             flash('success','Lançamento atualizado.');
         } else {
             throw new InvalidArgumentException('Ação inválida.');
@@ -58,26 +78,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (InvalidArgumentException $error) {
         flash('error', $error->getMessage());
     } catch (PDOException $error) {
-        error_log('GestorFC: falha ao gravar lançamento financeiro.');
-        flash('error', $error->getCode() === '23000'
-            ? 'A mensalidade deste aluno para esta competência já existe.'
-            : 'Não foi possível salvar o lançamento. Confira os dados e tente novamente.');
+        error_log($error->getMessage());
+        flash('error','Não foi possível salvar. Verifique se a mensalidade deste aluno já existe nessa competência.');
     }
     go('financeiro.php');
 }
 $edit = null;
-$editId = positiveId($_GET['editar'] ?? null);
-if ($editId) {
-    $q = $db->prepare("SELECT * FROM TB_FINANCEIRO WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=? AND STATUS='PENDENTE'");
-    $q->execute([$editId,$escola]);
+if (isset($_GET['editar'])) {
+    $q = $db->prepare("SELECT * FROM TB_FINANCEIRO WHERE COD_LANCAMENTO=? AND COD_ESCOLINHA=? AND STATUS IN ('PENDENTE','ATRASADO','NAO_PAGO')");
+    $q->execute([(int)$_GET['editar'],$escola]);
     $edit=$q->fetch();
     if (!$edit) { flash('error','Lançamento não disponível para edição.'); go('financeiro.php'); }
 }
-$mes = is_string($_GET['mes'] ?? null) ? $_GET['mes'] : date('Y-m');
+$mes = $_GET['mes'] ?? date('Y-m');
 if (!is_string($mes) || !validDate($mes . '-01')) $mes = date('Y-m');
 $inicio = $mes . '-01';
 $fim = date('Y-m-d', strtotime($inicio . ' +1 month'));
-$situacao = is_string($_GET['situacao'] ?? null) ? $_GET['situacao'] : '';
+$situacao = $_GET['situacao'] ?? '';
 if (!in_array($situacao, ['', 'PENDENTE','PAGO','CANCELADO','ATRASADO'], true)) $situacao = '';
 $q = $db->prepare('SELECT f.*,a.NOME AS ALUNO FROM TB_FINANCEIRO f LEFT JOIN TB_ALUNO a ON a.COD_ALUNO=f.COD_ALUNO AND a.COD_ESCOLINHA=f.COD_ESCOLINHA WHERE f.COD_ESCOLINHA=? AND f.VENCIMENTO>=? AND f.VENCIMENTO<? ORDER BY f.VENCIMENTO,f.COD_LANCAMENTO DESC');
 $q->execute([$escola,$inicio,$fim]);
@@ -87,10 +104,11 @@ foreach ($todos as $item) {
     if ($item['STATUS'] === 'PAGO') {
         if ($item['TIPO'] === 'RECEITA') $recebido += (int) round((float) $item['VALOR'] * 100);
         else $despesas += (int) round((float) $item['VALOR'] * 100);
-    } elseif ($item['STATUS'] === 'PENDENTE' && $item['TIPO'] === 'RECEITA') $pendente += (int) round((float) $item['VALOR'] * 100);
+    } elseif (in_array($item['STATUS'], ['PENDENTE', 'ATRASADO', 'NAO_PAGO'], true) && $item['TIPO'] === 'RECEITA') $pendente += (int) round((float) $item['VALOR'] * 100);
 }
 $lista = array_filter($todos, static function ($item) use ($situacao) {
-    if ($situacao === 'ATRASADO') return $item['STATUS'] === 'PENDENTE' && $item['VENCIMENTO'] < date('Y-m-d');
+    if ($situacao === 'ATRASADO') return $item['STATUS'] === 'ATRASADO' || ($item['STATUS'] === 'PENDENTE' && $item['VENCIMENTO'] < date('Y-m-d'));
+    if ($situacao === 'PENDENTE') return in_array($item['STATUS'], ['PENDENTE', 'ATRASADO', 'NAO_PAGO'], true);
     return $situacao === '' || $item['STATUS'] === $situacao;
 });
 $q = $db->prepare('SELECT COD_ALUNO,NOME FROM TB_ALUNO WHERE COD_ESCOLINHA=? ORDER BY NOME');
@@ -113,7 +131,17 @@ pageStart('Financeiro');
 <label>Descrição<input name="descricao" maxlength="150" required value="<?= e($edit['DESCRICAO'] ?? '') ?>"></label><label>Valor (R$)<input name="valor" value="<?= e($edit['VALOR'] ?? '') ?>" type="number" step="0.01" min="0.01" max="99999999.99" required></label><label>Vencimento<input name="vencimento" type="date" required value="<?= e($edit['VENCIMENTO'] ?? date('Y-m-d')) ?>"></label>
 <div><?php actionButton($edit ? 'Salvar alterações' : 'Registrar lançamento'); ?></div></form></details>
 <div class="financeiro-tabela" tabindex="0" aria-label="Lançamentos financeiros"><table><thead><tr><th>Descrição / Aluno</th><th>Tipo</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-<?php foreach ($lista as $item): ?><tr><td><?= e($item['DESCRICAO']) ?><br><small><?= e($item['ALUNO'] ?: 'Sem aluno vinculado') ?><?= $item['COMPETENCIA'] ? ' · '.e(date('m/Y',strtotime($item['COMPETENCIA']))) : '' ?></small></td><td><?= e($item['TIPO']) ?></td><td><?= e(date('d/m/Y',strtotime($item['VENCIMENTO']))) ?></td><td><?= reais((int)round((float)$item['VALOR']*100)) ?></td><td><?= $item['STATUS']==='PENDENTE' && $item['VENCIMENTO']<date('Y-m-d') ? 'ATRASADO' : e($item['STATUS']) ?><?php if ($item['DATA_PAGAMENTO']): ?><br><small>Baixa: <?= e(date('d/m/Y',strtotime($item['DATA_PAGAMENTO']))) ?></small><?php endif; ?></td><td>
-<form method="post" class="financeiro-baixa"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="id" value="<?= (int)$item['COD_LANCAMENTO'] ?>"><?php if ($item['STATUS']==='PENDENTE'): ?><a href="financeiro.php?editar=<?= (int)$item['COD_LANCAMENTO'] ?>">Editar</a><label>Data da baixa<input type="date" name="data_pagamento" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required></label><button name="acao" value="pagar">Registrar pagamento</button><button name="acao" value="cancelar" formnovalidate data-confirm-click="Cancelar este lançamento?">Cancelar</button><?php elseif ($item['STATUS']==='PAGO'): ?><button name="acao" value="reabrir" data-confirm-click="Desfazer a baixa e tornar este lançamento pendente?">Desfazer baixa</button><?php else: ?><input type="hidden" name="cancelado" value="1"><button name="acao" value="reabrir" data-confirm-click="Reabrir este lançamento cancelado como pendente?">Reabrir lançamento</button><?php endif; ?></form>
+<?php foreach ($lista as $item): ?><tr><td><?= e($item['DESCRICAO']) ?><br><small><?= e($item['ALUNO'] ?: 'Sem aluno vinculado') ?><?= $item['COMPETENCIA'] ? ' · '.e(date('m/Y',strtotime($item['COMPETENCIA']))) : '' ?></small></td><td><?= e($item['TIPO']) ?></td><td><?= e(date('d/m/Y',strtotime($item['VENCIMENTO']))) ?></td><td><?= reais((int)round((float)$item['VALOR']*100)) ?></td><td><?php
+    $pagaComAtraso = $item['CATEGORIA'] === 'MENSALIDADE' && $item['STATUS'] === 'PAGO'
+        && $item['DATA_PAGAMENTO'] && $item['VENCIMENTO'] && $item['DATA_PAGAMENTO'] > $item['VENCIMENTO'];
+    if ($pagaComAtraso): ?>
+        <strong class="mensalidade-atrasada">Paga com atraso</strong>
+    <?php else: ?>
+        <?= $item['STATUS']==='PENDENTE' && $item['VENCIMENTO']<date('Y-m-d') ? 'ATRASADO' : e($item['STATUS'] === 'NAO_PAGO' ? 'NÃO PAGO' : $item['STATUS']) ?>
+    <?php endif; ?><?php if ($item['DATA_PAGAMENTO']): ?><br><small>Baixa: <?= e(date('d/m/Y',strtotime($item['DATA_PAGAMENTO']))) ?></small><?php endif; ?></td><td>
+<form method="post" class="financeiro-baixa"><input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="id" value="<?= (int)$item['COD_LANCAMENTO'] ?>"><?php if (in_array($item['STATUS'], ['PENDENTE','ATRASADO','NAO_PAGO'], true)): ?><a href="financeiro.php?editar=<?= (int)$item['COD_LANCAMENTO'] ?>">Editar</a><?php $inicioCompetencia = $item['CATEGORIA'] === 'MENSALIDADE' ? $item['COMPETENCIA'] : null; ?>
+<?php if (!$inicioCompetencia || $inicioCompetencia <= date('Y-m-d')): ?>
+<label>Data da baixa<input type="date" name="data_pagamento" value="<?= date('Y-m-d') ?>" <?= $inicioCompetencia ? 'min="' . e($inicioCompetencia) . '"' : '' ?> max="<?= date('Y-m-d') ?>" required></label><button name="acao" value="pagar">Registrar pagamento</button>
+<?php else: ?><span>Disponível a partir de <?= e(date('d/m/Y', strtotime($inicioCompetencia))) ?>.</span><?php endif; ?><button name="acao" value="cancelar" formnovalidate data-confirm-click="Cancelar este lançamento?">Cancelar</button><?php elseif ($item['STATUS'] === 'CANCELADO'): ?><input type="hidden" name="cancelado" value="1"><button name="acao" value="reabrir" data-confirm-click="Reabrir este lançamento cancelado?">Reabrir lançamento</button><?php else: ?><button name="acao" value="reabrir" data-confirm-click="Desfazer a baixa e tornar este lançamento pendente?">Desfazer baixa</button><?php endif; ?></form>
 </td></tr><?php endforeach; ?><?php if (!$lista): ?><tr><td colspan="6">Nenhum lançamento para estes filtros.</td></tr><?php endif; ?></tbody></table></div></div>
 <?php pageEnd(); ?>

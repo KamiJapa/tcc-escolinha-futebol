@@ -1,4 +1,5 @@
 <?php
+// Registra partidas, placares e a participação dos atletas.
 require_once __DIR__ . '/includes/layout.php';
 // Visão individual com vínculo validado no servidor.
 if (hasRole(['RESPONSAVEL'])) {
@@ -218,8 +219,10 @@ $jogos = $stmt->fetchAll();
 $proximos = [];
 $anteriores = [];
 foreach ($jogos as $jogo) {
-    if ($jogo['DATA_JOGO'] >= date('Y-m-d')) $proximos[] = $jogo;
-    else $anteriores[] = $jogo;
+    // Um jogo com placar lançado já pertence ao histórico.
+    $temPlacar = $jogo['GOLS_ESCOLINHA'] !== null && $jogo['GOLS_ADVERSARIO'] !== null;
+    if ($temPlacar || $jogo['DATA_JOGO'] < date('Y-m-d')) $anteriores[] = $jogo;
+    else $proximos[] = $jogo;
 }
 usort($proximos, static function ($a, $b) {
     $inicioA = strtotime($a['DATA_JOGO'] . ' ' . ($a['HORARIO'] ?: '00:00:00'));
@@ -243,7 +246,7 @@ $sqlStats = "SELECT t.COD_TURMA, t.NOME AS TURMA, t.FAIXA_ETARIA, a.COD_ALUNO, a
         SUM(ja.GOLS) AS GOLS, SUM(ja.ASSISTENCIAS) AS ASSISTENCIAS, COUNT(DISTINCT j.COD_JOGO) AS JOGOS
     FROM TB_JOGO_ATLETA ja JOIN TB_JOGO j ON j.COD_JOGO = ja.COD_JOGO
     JOIN TB_TURMA t ON t.COD_TURMA = j.COD_TURMA JOIN TB_ALUNO a ON a.COD_ALUNO = ja.COD_ALUNO
-    WHERE t.COD_ESCOLINHA = ? AND j.COD_TURMA IN ($marcadoresTurma) AND j.DATA_JOGO < CURDATE() AND ja.PARTICIPOU = 1";
+    WHERE t.COD_ESCOLINHA = ? AND j.COD_TURMA IN ($marcadoresTurma) AND (j.DATA_JOGO < CURDATE() OR (j.GOLS_ESCOLINHA IS NOT NULL AND j.GOLS_ADVERSARIO IS NOT NULL)) AND ja.PARTICIPOU = 1";
 $paramsStats = array_merge([$escolinha], $idsPermitidos);
 if ($turmaFiltro) { $sqlStats .= ' AND t.COD_TURMA = ?'; $paramsStats[] = $turmaFiltro; }
 if (in_array($perfil, ['RESPONSAVEL', 'ALUNO'], true)) {
@@ -300,8 +303,8 @@ pageStart('Jogos');
 ?>
 <div class="jogos-page">
     <header class="jogos-hero">
-        <div><p class="jogos-kicker"><span></span> TEMPORADA · GESTORFC</p><h2>Jogos e estatísticas.</h2><p>Organize partidas e acompanhe o desempenho real dos atletas por turma.</p></div>
-        <div class="jogos-hero-resumo"><span aria-hidden="true">⚽</span><div><strong><?= count($proximos) ?></strong><small>próximos jogos</small></div></div>
+        <div><h2>Partidas e estatísticas</h2></div>
+        <div class="jogos-hero-resumo"><div><strong><?= count($proximos) ?></strong><small>próximos jogos</small></div></div>
     </header>
 
     <section class="jogos-metricas" aria-label="Resumo dos jogos"><article><span>Partidas realizadas</span><strong><?= $jogosJogados ?></strong><small>com resultado registrado</small></article><article><span>Gols marcados</span><strong><?= $golsMarcados ?></strong><small>escolinha</small></article><article><span>Gols sofridos</span><strong><?= $golsSofridos ?></strong><small>adversários</small></article><article><span>Atletas no ranking</span><strong><?= count($estatisticas) ?></strong><small>com participação registrada</small></article></section>
@@ -309,7 +312,7 @@ pageStart('Jogos');
     <section class="jogos-filtro-card"><form method="get" class="jogos-filtros"><label><span>Turma e categoria</span><select name="turma"><option value="0">Todas as categorias</option><?php foreach ($turmas as $turma): ?><option value="<?= (int) $turma['COD_TURMA'] ?>" <?= $turmaFiltro === (int) $turma['COD_TURMA'] ? 'selected' : '' ?>><?= e($turma['NOME']) ?> · <?= e($turma['FAIXA_ETARIA']) ?></option><?php endforeach; ?></select></label><button class="jogos-botao-secundario" type="submit">Aplicar filtro</button></form><?php if ($podeGerenciar): ?><a class="jogos-botao-principal" href="jogos.php?novo=1<?= $turmaFiltro ? '&amp;nova_turma=' . $turmaFiltro : '' ?>#formularioJogo">+ Registrar jogo</a><?php endif; ?></section>
 
     <?php if ($podeGerenciar && (isset($_GET['novo']) || $edit)): ?>
-    <section class="jogos-form-card" id="formularioJogo"><div class="jogos-titulo-secao"><div><p class="jogos-kicker">SÚMULA</p><h2><?= $edit ? 'Editar partida' : 'Registrar partida' ?></h2><p>Escalação e números individuais ficam vinculados a esta partida.</p></div><a class="jogos-fechar-form" href="jogos.php<?= $turmaFiltro ? '?turma=' . $turmaFiltro : '' ?>" aria-label="Fechar formulário">×</a></div>
+    <section class="jogos-form-card" id="formularioJogo"><div class="jogos-titulo-secao"><div><h2><?= $edit ? 'Editar partida' : 'Registrar partida' ?></h2><p>Escalação e números individuais ficam vinculados a esta partida.</p></div><a class="jogos-fechar-form" href="jogos.php<?= $turmaFiltro ? '?turma=' . $turmaFiltro : '' ?>" aria-label="Fechar formulário">×</a></div>
         <form method="post" class="jogos-form">
             <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>"><input type="hidden" name="acao" value="salvar"><input type="hidden" name="jogo" value="<?= (int) ($edit['COD_JOGO'] ?? 0) ?>">
             <label class="jogos-form-turma"><span>Turma</span><select name="turma" required data-jogo-turma><?php foreach ($turmas as $turma): ?><option value="<?= (int) $turma['COD_TURMA'] ?>" <?= $turmaForm === (int) $turma['COD_TURMA'] ? 'selected' : '' ?>><?= e($turma['NOME']) ?> · <?= e($turma['FAIXA_ETARIA']) ?></option><?php endforeach; ?></select></label>
@@ -334,7 +337,7 @@ pageStart('Jogos');
         $participantes = array_values(array_filter($linhas, static function ($linha) { return (int) $linha['PARTICIPOU'] === 1; }));
         ?>
         <article class="jogo-card"><div class="jogo-card-cabecalho"><div><span class="jogo-data"><?= e($rotuloData($jogo['DATA_JOGO'])) ?><?= $jogo['HORARIO'] ? ' · ' . e(substr((string) $jogo['HORARIO'], 0, 5)) : '' ?></span><span class="jogo-categoria"><?= e($jogo['TURMA']) ?> · <?= e($jogo['FAIXA_ETARIA']) ?></span></div><?php if ($temResultado): ?><span class="jogo-status <?= (int) $jogo['GOLS_ESCOLINHA'] > (int) $jogo['GOLS_ADVERSARIO'] ? 'venceu' : ((int) $jogo['GOLS_ESCOLINHA'] === (int) $jogo['GOLS_ADVERSARIO'] ? 'empatou' : 'perdeu') ?>">Resultado final</span><?php else: ?><span class="jogo-status agendado">Agendado</span><?php endif; ?></div>
-        <div class="jogo-placar-card"><div class="jogo-equipe"><span class="jogo-escudo">⚽</span><strong>Escolinha</strong></div><div class="jogo-resultado"><strong><?= $temResultado ? (int) $jogo['GOLS_ESCOLINHA'] . ' : ' . (int) $jogo['GOLS_ADVERSARIO'] : '— : —' ?></strong><small><?= $temResultado ? 'PLACAR' : 'VS' ?></small></div><div class="jogo-equipe adversario"><span class="jogo-escudo adversario-escudo" aria-hidden="true">◈</span><strong><?= e($jogo['ADVERSARIO']) ?></strong></div></div>
+        <div class="jogo-placar-card"><div class="jogo-equipe"><span class="jogo-escudo" aria-hidden="true">GFC</span><strong>Escolinha</strong></div><div class="jogo-resultado"><strong><?= $temResultado ? (int) $jogo['GOLS_ESCOLINHA'] . ' : ' . (int) $jogo['GOLS_ADVERSARIO'] : '— : —' ?></strong><small><?= $temResultado ? 'PLACAR' : 'VS' ?></small></div><div class="jogo-equipe adversario"><span class="jogo-escudo adversario-escudo" aria-hidden="true">◈</span><strong><?= e($jogo['ADVERSARIO']) ?></strong></div></div>
         <div class="jogo-card-meta"><?php if (!empty($jogo['LOCAL'])): ?><span>⌖ <?= e($jogo['LOCAL']) ?></span><?php endif; ?><?php if (!empty($jogo['PROFESSOR'])): ?><span>◉ <?= e($jogo['PROFESSOR']) ?></span><?php endif; ?><span><?= count($participantes) ?> atleta<?= count($participantes) === 1 ? '' : 's' ?> com participação</span></div>
         <?php if ($jogo['OBSERVACOES']): ?><p class="jogo-observacao"><?= e($jogo['OBSERVACOES']) ?></p><?php endif; ?>
         <details class="jogo-detalhes"><summary>Escalação e números individuais</summary><?php if ($participantes): ?><div class="jogo-participantes"><?php foreach ($participantes as $atleta): ?><span><?= (int) $atleta['TITULAR'] ? '<b>XI</b> ' : '' ?><?= $atleta['NUMERO_CAMISA'] !== null ? '#' . (int) $atleta['NUMERO_CAMISA'] . ' ' : '' ?><?= e($atleta['NOME']) ?><?php if ((int) $atleta['GOLS'] || (int) $atleta['ASSISTENCIAS']): ?><small><?= (int) $atleta['GOLS'] ?> gol<?= (int) $atleta['GOLS'] === 1 ? '' : 's' ?> · <?= (int) $atleta['ASSISTENCIAS'] ?> assist.</small><?php endif; ?></span><?php endforeach; ?></div><?php else: ?><p class="jogos-vazio-inline">Ainda não há participações registradas.</p><?php endif; ?></details>
@@ -342,10 +345,10 @@ pageStart('Jogos');
         <?php
     };
     ?>
-    <section class="jogos-lista-secao"><div class="jogos-titulo-secao"><div><p class="jogos-kicker">AGENDA</p><h2>Próximos jogos <span><?= count($proximos) ?></span></h2></div></div><?php if ($proximos): ?><div class="jogos-lista"><?php foreach ($proximos as $jogo) $renderJogo($jogo, $linhasPorJogo[(int) $jogo['COD_JOGO']] ?? [], $podeGerenciar, $turmaFiltro); ?></div><?php else: ?><div class="jogos-estado-vazio"><span>◷</span><div><strong>Nenhum próximo jogo</strong><p>As próximas partidas registradas aparecerão aqui.</p></div><?php if ($podeGerenciar): ?><a href="jogos.php?novo=1#formularioJogo">Registrar partida</a><?php endif; ?></div><?php endif; ?></section>
+    <section class="jogos-lista-secao"><div class="jogos-titulo-secao"><div><h2>Próximos jogos <span><?= count($proximos) ?></span></h2></div></div><?php if ($proximos): ?><div class="jogos-lista"><?php foreach ($proximos as $jogo) $renderJogo($jogo, $linhasPorJogo[(int) $jogo['COD_JOGO']] ?? [], $podeGerenciar, $turmaFiltro); ?></div><?php else: ?><div class="jogos-estado-vazio"><span>◷</span><div><strong>Nenhum próximo jogo</strong><p>As próximas partidas registradas aparecerão aqui.</p></div><?php if ($podeGerenciar): ?><a href="jogos.php?novo=1#formularioJogo">Registrar partida</a><?php endif; ?></div><?php endif; ?></section>
 
-    <section class="jogos-ranking-secao"><div class="jogos-titulo-secao"><div><p class="jogos-kicker">DESEMPENHO INDIVIDUAL</p><h2>Estatísticas por turma</h2><p>Contabilizadas a partir de jogos anteriores com participação registrada.</p></div></div><?php if ($estatisticasPorTurma): ?><div class="jogos-ranking-grupos"><?php foreach ($estatisticasPorTurma as $codTurma => $ranking): ?><article class="jogos-ranking-card"><header><div><strong><?= e($ranking[0]['TURMA']) ?></strong><span><?= e($ranking[0]['FAIXA_ETARIA']) ?></span></div><span class="jogos-ranking-count"><?= count($ranking) ?> atletas</span></header><div class="jogos-tabela-scroll"><table class="jogos-ranking-tabela"><thead><tr><th>Atleta</th><th>Jogos</th><th>Gols</th><th>Assist.</th><th>G+A / jogo</th></tr></thead><tbody><?php foreach ($ranking as $posicao => $linha): ?><tr><td><span class="jogos-ranking-posicao"><?= $posicao + 1 ?></span><strong><?= $linha['NUMERO_CAMISA'] !== null ? '#' . (int) $linha['NUMERO_CAMISA'] . ' ' : '' ?><?= e($linha['ATLETA']) ?></strong></td><td><?= (int) $linha['JOGOS'] ?></td><td><b class="jogos-gols-value"><?= (int) $linha['GOLS'] ?></b></td><td><?= (int) $linha['ASSISTENCIAS'] ?></td><td><?= $linha['JOGOS'] ? number_format(((int) $linha['GOLS'] + (int) $linha['ASSISTENCIAS']) / (int) $linha['JOGOS'], 2, ',', '.') : '0,00' ?></td></tr><?php endforeach; ?></tbody></table></div></article><?php endforeach; ?></div><?php else: ?><div class="jogos-estado-vazio"><span>⌁</span><div><strong>Sem estatísticas registradas</strong><p>Depois dos jogos realizados, os números de participação, gols e assistências serão consolidados aqui.</p></div></div><?php endif; ?></section>
+    <section class="jogos-ranking-secao"><div class="jogos-titulo-secao"><div><h2>Estatísticas por turma</h2><p>Contabilizadas a partir de jogos anteriores com participação registrada.</p></div></div><?php if ($estatisticasPorTurma): ?><div class="jogos-ranking-grupos"><?php foreach ($estatisticasPorTurma as $codTurma => $ranking): ?><article class="jogos-ranking-card"><header><div><strong><?= e($ranking[0]['TURMA']) ?></strong><span><?= e($ranking[0]['FAIXA_ETARIA']) ?></span></div><span class="jogos-ranking-count"><?= count($ranking) ?> atletas</span></header><div class="jogos-tabela-scroll"><table class="jogos-ranking-tabela"><thead><tr><th>Atleta</th><th>Jogos</th><th>Gols</th><th>Assist.</th><th>G+A / jogo</th></tr></thead><tbody><?php foreach ($ranking as $posicao => $linha): ?><tr><td><span class="jogos-ranking-posicao"><?= $posicao + 1 ?></span><strong><?= $linha['NUMERO_CAMISA'] !== null ? '#' . (int) $linha['NUMERO_CAMISA'] . ' ' : '' ?><?= e($linha['ATLETA']) ?></strong></td><td><?= (int) $linha['JOGOS'] ?></td><td><b class="jogos-gols-value"><?= (int) $linha['GOLS'] ?></b></td><td><?= (int) $linha['ASSISTENCIAS'] ?></td><td><?= $linha['JOGOS'] ? number_format(((int) $linha['GOLS'] + (int) $linha['ASSISTENCIAS']) / (int) $linha['JOGOS'], 2, ',', '.') : '0,00' ?></td></tr><?php endforeach; ?></tbody></table></div></article><?php endforeach; ?></div><?php else: ?><div class="jogos-estado-vazio"><span>⌁</span><div><strong>Sem estatísticas registradas</strong><p>Depois dos jogos realizados, os números de participação, gols e assistências serão consolidados aqui.</p></div></div><?php endif; ?></section>
 
-    <section class="jogos-lista-secao jogos-historico-secao"><div class="jogos-titulo-secao"><div><p class="jogos-kicker">ARQUIVO</p><h2>Jogos anteriores <span><?= count($anteriores) ?></span></h2></div></div><?php if ($anteriores): ?><div class="jogos-lista"><?php foreach ($anteriores as $jogo) $renderJogo($jogo, $linhasPorJogo[(int) $jogo['COD_JOGO']] ?? [], $podeGerenciar, $turmaFiltro); ?></div><?php else: ?><p class="jogos-vazio-inline">Nenhum jogo anterior registrado.</p><?php endif; ?></section>
+    <section class="jogos-lista-secao jogos-historico-secao"><div class="jogos-titulo-secao"><div><h2>Jogos anteriores <span><?= count($anteriores) ?></span></h2></div></div><?php if ($anteriores): ?><div class="jogos-lista"><?php foreach ($anteriores as $jogo) $renderJogo($jogo, $linhasPorJogo[(int) $jogo['COD_JOGO']] ?? [], $podeGerenciar, $turmaFiltro); ?></div><?php else: ?><p class="jogos-vazio-inline">Nenhum jogo anterior registrado.</p><?php endif; ?></section>
 </div>
 <?php pageEnd(); ?>

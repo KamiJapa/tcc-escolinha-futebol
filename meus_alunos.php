@@ -1,4 +1,5 @@
 <?php
+// Monta o perfil esportivo com base no histórico de frequência e desempenho do aluno.
 require_once __DIR__ . '/includes/layout.php';
 // Visão individual com vínculo validado no servidor.
 if (hasRole(['RESPONSAVEL'])) {
@@ -218,7 +219,7 @@ pageStart('Meu Perfil');
 <div class="career-page">
     <header class="career-heading">
         <div>
-            <p class="career-kicker"><span></span> CENTRAL DO ATLETA</p>
+
             <h2>Uma jornada construída treino a treino.</h2>
             <p>Acompanhe a trajetória, o desempenho e os próximos passos de cada atleta.</p>
         </div>
@@ -228,7 +229,7 @@ pageStart('Meu Perfil');
     <?php if (!$perfilAluno && !$responsavel): ?>
         <section class="career-empty"><span class="career-empty-icon" aria-hidden="true">◎</span><div><h2>Vínculo de responsável pendente</h2><p>Solicite à secretaria a associação do seu usuário ao cadastro de responsável para acessar a carreira dos atletas.</p></div></section>
     <?php elseif (!$atletas): ?>
-        <section class="career-empty"><span class="career-empty-icon" aria-hidden="true">⚽</span><div><h2><?= $perfilAluno ? 'Perfil de atleta indisponível' : 'Nenhum atleta vinculado' ?></h2><p><?= $perfilAluno ? 'Peça à secretaria para vincular seu acesso ao cadastro esportivo.' : 'Quando um atleta for associado ao seu cadastro pela secretaria, seu perfil aparecerá aqui.' ?></p></div></section>
+        <section class="career-empty"><div><h2><?= $perfilAluno ? 'Perfil de atleta indisponível' : 'Nenhum atleta vinculado' ?></h2><p><?= $perfilAluno ? 'Peça à secretaria para vincular seu acesso ao cadastro esportivo.' : 'Quando um atleta for associado ao seu cadastro pela secretaria, seu perfil aparecerá aqui.' ?></p></div></section>
     <?php else: ?>
         <div class="career-list">
             <?php foreach ($atletas as $atleta): ?>
@@ -273,14 +274,14 @@ pageStart('Meu Perfil');
                             <div class="career-stat-grid">
                                 <div class="career-stat"><span class="career-stat-icon">◷</span><strong><?= (int) $presenca['PRESENCAS'] ?></strong><small>Presenças</small></div>
                                 <div class="career-stat"><span class="career-stat-icon blue">%</span><strong><?= $percentualPresenca === null ? '—' : e($percentualPresenca . '%') ?></strong><small>Frequência</small></div>
-                                <div class="career-stat"><span class="career-stat-icon gold">⚽</span><strong class="career-unavailable">Sem registro</strong><small>Gols</small></div>
+                                <div class="career-stat"><strong class="career-unavailable">Sem registro</strong><small>Gols</small></div>
                                 <div class="career-stat"><span class="career-stat-icon violet">↗</span><strong class="career-unavailable">Sem registro</strong><small>Assistências</small></div>
                             </div>
                             <p class="career-data-note">Gols e assistências ainda não são registrados pelo sistema.</p>
                         </section>
 
                         <section class="career-card career-next-training">
-                            <div class="career-section-title"><div><span class="career-section-icon blue" aria-hidden="true">⚽</span><div><p>PRÓXIMO PASSO</p><h3>Próximo treino</h3></div></div></div>
+                            <div class="career-section-title"><div><div><p>PRÓXIMO PASSO</p><h3>Próximo treino</h3></div></div></div>
                             <?php if ($atleta['PROXIMO_TREINO']): $proximo = $atleta['PROXIMO_TREINO']; ?>
                                 <div class="career-next-event"><div class="career-event-date"><strong><?= e(date('d', strtotime($proximo['data']))) ?></strong><span><?= e(mb_strtoupper(mb_substr($nomesDias[(int) date('w', strtotime($proximo['data']))], 0, 3, 'UTF-8'), 'UTF-8')) ?></span></div><div><strong><?= e($proximo['turma']) ?></strong><span><?= e($proximo['tema'] ?: 'Treino regular') ?></span><small><?= e(date('d/m', strtotime($proximo['data']))) ?><?php if ($proximo['hora']): ?> · <?= e($proximo['hora']) ?> · <?= e($proximo['categoria']) ?><?php else: ?> · <?= e($proximo['categoria']) ?><?php endif; ?></small></div><span class="career-event-badge">AGENDADO</span></div>
                             <?php else: ?><div class="career-card-empty compact"><span>◷</span><p>Não há próximo treino cadastrado para as turmas ativas.</p></div><?php endif; ?>

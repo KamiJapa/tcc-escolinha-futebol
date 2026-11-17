@@ -2,11 +2,12 @@
 Usa apenas a biblioteca padrão do Python. Execute após importar database.sql.
 """
 import os, re, urllib.request, urllib.parse, urllib.error, http.cookiejar
-from datetime import date
+from datetime import date, timedelta
 BASE=os.environ.get('TEST_BASE_URL')
 if not BASE: raise SystemExit('Defina TEST_BASE_URL para um servidor com banco descartável.')
 TODAY=date.today().isoformat()
 MONTH=TODAY[:7]
+TRAINING_DATE=(date.today() + timedelta(days=(1-date.today().weekday()) % 7)).isoformat()
 count=0
 def ok(value,label):
  global count
@@ -60,7 +61,7 @@ code,body=admin.post('aulas.php',{'action':'attendance','id':1,'alunos[4][presen
 ok(code==400,'Chamada rejeita aluno de outra turma')
 code,body=admin.post('aulas.php',{'action':'attendance','id':1,'alunos[1][presente]':1,'alunos[5][justificativa]':'Consulta'})
 ok(code==200 and 'Chamada registrada' in body,'Chamada válida salva')
-code,body=admin.post('aulas.php',{'action':'create','cod_turma':1,'data_aula':TODAY,'tema_treino':'QA Passe','horario':'14:00','tipo_treino':'PASSE'})
+code,body=admin.post('aulas.php',{'action':'create','cod_turma':1,'data_aula':TRAINING_DATE,'tema_treino':'QA Passe','horario':'14:00','tipo_treino':'PASSE'})
 ok('Treino cadastrado' in body,'Plano de treino cadastrado')
 code,body=admin.post('avaliacoes.php?aula=1',{'action':'save_evaluations','id_aula':1,'tipo_treino':'PASSE','notas[1][passe]':'8.5','notas[5][passe]':'7'})
 ok(code==200 and '8.5' in body,'Avaliação do treino salva')
@@ -107,7 +108,7 @@ secretary=Client().login('secretaria@teste.com')
 ok(secretary.req('financeiro.php')[0]==200,'Secretaria acessa financeiro')
 ok(secretary.req('usuarios.php')[0]==403,'Secretaria não gerencia usuários')
 # Conta do aluno criada pelo fluxo oficial.
-code,body=admin.post('alunos.php?mini=1',{'action':'update','id':1,'nome':'Lucas Oliveira (Filho do Fernando)','data_nascimento':'2016-04-15','cod_responsavel':1,'posicao':'Atacante','status':'ATIVO','email_acesso':'aluno@example.test','senha_acesso':'123456'})
+code,body=admin.post('alunos.php',{'action':'update','id':1,'nome':'Lucas Oliveira (Filho do Fernando)','data_nascimento':'2016-04-15','cod_responsavel':1,'posicao':'Atacante','status':'ATIVO','email_acesso':'aluno@example.test','senha_acesso':'123456','cod_turma':2})
 ok('Dados do aluno atualizados' in body,'Acesso do aluno criado')
 student=Client().login('aluno@example.test')
 for page in ['meus_alunos.php','evolucao.php','metas.php','jogos.php','calendario.php']:
@@ -121,7 +122,7 @@ code,body=admin.post('camisas.php',{'acao':'atribuir','aluno':2,'numero':18})
 ok('já está com' in body,'Camisa duplicada rejeitada')
 code,body=admin.post('camisas.php',{'acao':'trocar','primeiro_aluno':1,'segundo_aluno':2})
 ok('foram trocados' in body,'Troca de camisas salva')
-game={'acao':'salvar','turma':1,'adversario':'QA Visitante','data':TODAY,'horario':'14:00','local':'Campo','gols_escolinha':2,'gols_adversario':1,'atletas[1][participou]':1,'atletas[1][titular]':1,'atletas[1][gols]':2,'atletas[1][assistencias]':0}
+game={'acao':'salvar','turma':1,'adversario':'QA Visitante','data':TODAY,'horario':'14:00','local':'Campo','gols_escolinha':2,'gols_adversario':1,'atletas[5][participou]':1,'atletas[5][titular]':1,'atletas[5][gols]':2,'atletas[5][assistencias]':0}
 code,body=admin.post('jogos.php?novo=1',game)
 ok('Jogo cadastrado' in body,'Jogo com escalação e estatísticas salvo')
 code,body=admin.post('jogos.php?novo=1',dict(game,gols_escolinha=1))
@@ -130,12 +131,12 @@ code,body=student.post('metas.php',{'acao':'criar','tipo':'GOLS','valor_alvo':3}
 ok('Meta criada' in body,'Meta pessoal salva')
 code,body=student.post('metas.php',{'acao':'criar','tipo':'OVERALL','valor_alvo':11})
 ok('objetivo válido' in body,'Meta fora da escala rejeitada')
-code,body=Client().post('cadastro.php',{'nome':'QA Responsável','cpf':'12345679204','email':'qa-parent@example.test','telefone':'','senha':'123456','confirmacao':'123456'})
-ok('Cadastro realizado' in body,'Cadastro público de responsável salvo')
+ok(Client().req('cadastro.php', {})[0]==405,'Cadastro público desativado')
+code,body=admin.post('responsaveis.php',{'action':'create','nome':'QA Responsável','cpf':'12345679204','email':'qa-parent@example.test','telefone':'','senha':'123456'})
+ok('Responsável cadastrado' in body,'Conta do responsável criada pelo administrador')
 newparent=Client().login('qa-parent@example.test')
 code,body=newparent.req('area_responsavel.php')
 ok('Lucas' not in body,'Nova conta não recebe filhos de terceiros')
-print('SKIP: vínculo manual pelo formulário administrativo foi removido antes da base 3ec0ce2; cadastro público vinculado segue coberto.')
 code,body=admin.post('responsaveis.php',{'action':'create','nome':'QA Familiar','cpf':'12345679387','email':'','telefone':'','endereco':''})
 ok('Responsável cadastrado' in body,'Responsável administrativo cadastrado')
 code,body=admin.post('responsaveis.php',{'action':'create','nome':'QA CPF inválido','cpf':'11111111111','email':'','telefone':'','endereco':''})
@@ -156,14 +157,14 @@ ok('E-mail ou senha inválidos' in body,'Login de aluno inativo bloqueado')
 code,body=admin.post('aulas.php',{'action':'delete','id':1})
 ok('Aula excluída. As presenças foram removidas' in body,'Exclusão HTTP de aula informa remoção das presenças')
 # Camisa opcional, observações vazias e duplicata entre alunos ativos.
-new_student = {'action': 'create', 'nome': 'QA Camisa', 'data_nascimento': '2015-01-29',
+new_student = {'action': 'create', 'nome': 'QA Camisa', 'data_nascimento': f'{date.today().year-11}-01-01', 'cod_turma': 2,
                'cod_responsavel': 1, 'status': 'ATIVO', 'observacoes_medicas': '',
                'numero_camisa': 98}
-code, body = admin.post('alunos.php?mini=1', new_student)
+code, body = admin.post('alunos.php', new_student)
 ok('Aluno cadastrado' in body, 'Aluno com camisa e observações vazias gravado')
-code, body = admin.post('alunos.php?mini=1', dict(new_student, nome='QA Duplicata'))
+code, body = admin.post('alunos.php', dict(new_student, nome='QA Duplicata'))
 ok('já está com outro aluno ativo' in body, 'Cadastro rejeita camisa ativa duplicada')
-code, body = admin.post('alunos.php?mini=1', dict(new_student, nome='QA Sem Camisa', numero_camisa=''))
+code, body = admin.post('alunos.php', dict(new_student, nome='QA Sem Camisa', numero_camisa=''))
 ok('Aluno cadastrado' in body, 'Cadastro aceita camisa vazia')
 
 # Sessões separadas continuam usando o mesmo contador (deixe por último).

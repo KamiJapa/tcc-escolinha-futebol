@@ -1,4 +1,5 @@
 <?php
+// Compara os indicadores de desempenho por semana de treino.
 require_once __DIR__ . '/includes/layout.php';
 // Visão individual com vínculo validado no servidor.
 if (hasRole(['RESPONSAVEL'])) {
@@ -148,7 +149,7 @@ pageStart('Evolução do atleta');
 ?>
 <div class="evolucao-page">
     <header class="evolucao-hero">
-        <div><p class="evolucao-kicker"><span></span> DESENVOLVIMENTO DO ATLETA</p><h2>Uma evolução feita treino a treino.</h2><p>Acompanhe os resultados semanais, os atributos trabalhados e a frequência no mesmo período.</p></div>
+        <div><h2>Evolução do atleta</h2><p>Resultados e frequência por semana.</p></div>
         <span class="evolucao-hero-icon" aria-hidden="true">↗</span>
     </header>
 
@@ -157,7 +158,7 @@ pageStart('Evolução do atleta');
     <?php elseif ($atletas && !$atletaSelecionado): ?>
         <section class="evolucao-empty"><span>◎</span><div><h3>Atleta indisponível</h3><p>Escolha um atleta associado ao seu cadastro de responsável.</p><a href="evolucao.php">Voltar aos meus atletas</a></div></section>
     <?php elseif (!$atletaSelecionado): ?>
-        <section class="evolucao-empty"><span>⚽</span><div><h3>Nenhum atleta vinculado</h3><p>Quando um atleta estiver associado ao cadastro de responsável, seus dados de evolução aparecerão aqui.</p></div></section>
+        <section class="evolucao-empty"><div><h3>Nenhum atleta vinculado</h3><p>Quando um atleta estiver associado ao cadastro de responsável, seus dados de evolução aparecerão aqui.</p></div></section>
     <?php else: ?>
         <section class="evolucao-toolbar">
             <div class="evolucao-atleta-resumo"><span class="evolucao-avatar" aria-hidden="true"><?= e(mb_strtoupper(mb_substr($atletaSelecionado['NOME'], 0, 1, 'UTF-8'), 'UTF-8')) ?></span><div><small>ATLETA SELECIONADO</small><strong><?= e($atletaSelecionado['NOME']) ?></strong><span><?= e($atletaSelecionado['POSICAO'] ?: 'Posição não informada') ?><?= $atletaSelecionado['NUMERO_CAMISA'] !== null ? ' · Camisa #' . (int) $atletaSelecionado['NUMERO_CAMISA'] : '' ?></span></div></div>
@@ -171,14 +172,14 @@ pageStart('Evolução do atleta');
         </section>
 
         <div class="evolucao-graficos" data-evolution="<?= e(json_encode($dadosGrafico, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>" data-labels="<?= e(json_encode($catalogo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>">
-            <section class="evolucao-card evolucao-grafico-overall"><div class="evolucao-card-heading"><div><p class="evolucao-kicker">TENDÊNCIA</p><h3>Histórico semanal do Overall</h3></div><span>Últimas 24 semanas com registros</span></div><?php if ($dadosGrafico): ?><div class="evolucao-canvas-wrap"><canvas id="graficoOverall" aria-label="Gráfico semanal do Overall" role="img"></canvas></div><div class="evolucao-legenda"><i></i> Overall médio por semana</div><?php else: ?><div class="evolucao-chart-empty">Ainda não há avaliações com dados para desenhar o histórico.</div><?php endif; ?></section>
-            <section class="evolucao-card evolucao-grafico-atributos"><div class="evolucao-card-heading"><div><p class="evolucao-kicker">ATRIBUTOS</p><h3>Desenvolvimento técnico</h3></div><?php if ($atributosComDados): ?><label class="evolucao-seletor-atributo"><span>Atributo</span><select id="atributoGrafico"><?php foreach ($atributosComDados as $codigo => $nome): ?><option value="<?= e($codigo) ?>"><?= e($nome) ?></option><?php endforeach; ?></select></label><?php endif; ?></div><?php if ($atributosComDados): ?><div class="evolucao-canvas-wrap"><canvas id="graficoAtributos" aria-label="Gráfico semanal do atributo selecionado" role="img"></canvas></div><div class="evolucao-legenda azul"><i></i> Média das notas avaliadas</div><?php else: ?><div class="evolucao-chart-empty">Os atributos aparecem quando forem avaliados em um treino.</div><?php endif; ?></section>
+            <section class="evolucao-card evolucao-grafico-overall"><div class="evolucao-card-heading"><div><h3>Histórico semanal do Overall</h3></div><span>Últimas 24 semanas com registros</span></div><?php if ($dadosGrafico): ?><div class="evolucao-canvas-wrap"><canvas id="graficoOverall" aria-label="Gráfico semanal do Overall" role="img"></canvas></div><div class="evolucao-legenda"><i></i> Overall médio por semana</div><?php else: ?><div class="evolucao-chart-empty">Ainda não há avaliações com dados para desenhar o histórico.</div><?php endif; ?></section>
+            <section class="evolucao-card evolucao-grafico-atributos"><div class="evolucao-card-heading"><div><h3>Desenvolvimento técnico</h3></div><?php if ($atributosComDados): ?><label class="evolucao-seletor-atributo"><span>Atributo</span><select id="atributoGrafico"><?php foreach ($atributosComDados as $codigo => $nome): ?><option value="<?= e($codigo) ?>"><?= e($nome) ?></option><?php endforeach; ?></select></label><?php endif; ?></div><?php if ($atributosComDados): ?><div class="evolucao-canvas-wrap"><canvas id="graficoAtributos" aria-label="Gráfico semanal do atributo selecionado" role="img"></canvas></div><div class="evolucao-legenda azul"><i></i> Média das notas avaliadas</div><?php else: ?><div class="evolucao-chart-empty">Os atributos aparecem quando forem avaliados em um treino.</div><?php endif; ?></section>
         </div>
 
-        <section class="evolucao-card evolucao-detalhes-semana"><div class="evolucao-card-heading"><div><p class="evolucao-kicker">PERÍODO SELECIONADO</p><h3>Resumo da semana</h3></div><span><?= e(date('d/m', strtotime($semanaSelecionada))) ?> – <?= e((new DateTimeImmutable($semanaSelecionada))->modify('+6 days')->format('d/m/Y')) ?></span></div><div class="evolucao-atributos-semana"><?php $atributosSemanaExibidos = 0; foreach ($catalogo as $codigo => $nome): $valor = $dadosSemana['atributos'][$codigo] ?? null; if (!$valor || !$valor['contagem']) continue; $nota = $valor['soma'] / $valor['contagem']; $atributosSemanaExibidos++; ?><div><span><?= e($nome) ?></span><strong><?= e(number_format($nota, 1, ',', '.')) ?></strong><i><b data-chart-width="<?= e($nota * 10) ?>"></b></i></div><?php endforeach; ?><?php if (!$atributosSemanaExibidos): ?><p>Nenhum atributo foi avaliado nesta semana.</p><?php endif; ?></div><p class="evolucao-presenca-nota"><?= (int) $dadosSemana['chamadas'] ? (int) $dadosSemana['presencas'] . ' presenças e ' . (int) $dadosSemana['ausencias'] . ' ausências foram registradas nos treinos desta semana.' : 'Não há chamadas registradas para esta semana.' ?></p></section>
+        <section class="evolucao-card evolucao-detalhes-semana"><div class="evolucao-card-heading"><div><h3>Resumo da semana</h3></div><span><?= e(date('d/m', strtotime($semanaSelecionada))) ?> – <?= e((new DateTimeImmutable($semanaSelecionada))->modify('+6 days')->format('d/m/Y')) ?></span></div><div class="evolucao-atributos-semana"><?php $atributosSemanaExibidos = 0; foreach ($catalogo as $codigo => $nome): $valor = $dadosSemana['atributos'][$codigo] ?? null; if (!$valor || !$valor['contagem']) continue; $nota = $valor['soma'] / $valor['contagem']; $atributosSemanaExibidos++; ?><div><span><?= e($nome) ?></span><strong><?= e(number_format($nota, 1, ',', '.')) ?></strong><i><b data-chart-width="<?= e($nota * 10) ?>"></b></i></div><?php endforeach; ?><?php if (!$atributosSemanaExibidos): ?><p>Nenhum atributo foi avaliado nesta semana.</p><?php endif; ?></div><p class="evolucao-presenca-nota"><?= (int) $dadosSemana['chamadas'] ? (int) $dadosSemana['presencas'] . ' presenças e ' . (int) $dadosSemana['ausencias'] . ' ausências foram registradas nos treinos desta semana.' : 'Não há chamadas registradas para esta semana.' ?></p></section>
 
         <section class="evolucao-card evolucao-historico">
-            <div class="evolucao-card-heading"><div><p class="evolucao-kicker">REGISTROS REAIS</p><h3>Avaliações da semana</h3></div><span><?= count($dadosSemana['avaliacoes']) ?> registros</span></div>
+            <div class="evolucao-card-heading"><div><h3>Avaliações da semana</h3></div><span><?= count($dadosSemana['avaliacoes']) ?> registros</span></div>
             <?php if ($dadosSemana['avaliacoes']): ?>
                 <div class="evolucao-historico-lista">
                     <?php foreach ($dadosSemana['avaliacoes'] as $avaliacao):

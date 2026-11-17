@@ -1,4 +1,5 @@
 <?php
+// Monta o menu de cada perfil e abre os formulários em janelas flutuantes.
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/notificacoes_helpers.php';
@@ -58,6 +59,21 @@ function pageStart($title) {
 
     // A mini tela usa a mesma página e o mesmo salvamento, sem repetir o menu.
     if (isset($_GET['mini'])) {
+        if (isset($_GET['cadastro_salvo']) && ($_SESSION['flash']['type'] ?? '') === 'success') {
+            ?>
+            <script nonce="<?= cspNonce() ?>">
+                if (window.parent === window) {
+                    const pagina = new URL(window.location.href);
+                    pagina.searchParams.delete('mini');
+                    pagina.searchParams.delete('cadastro_salvo');
+                    window.location.replace(pagina.href);
+                } else {
+                    window.parent.postMessage('gestorfc:cadastro-salvo', window.location.origin);
+                }
+            </script>
+            <?php
+            exit;
+        }
         $modoChamada = isset($_GET['chamadas']) ? ' chamadas' : '';
         $modoCamisas = $title === 'Números das camisas' ? ' camisas' : '';
         ?>
@@ -67,6 +83,7 @@ function pageStart($title) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?> - GestorFC</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <?php if ($title !== 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/tailwind.css"><?php endif; ?>
     <link rel="stylesheet" href="assets/css/style.css">
     <script defer src="assets/js/gestorfc.js"></script>
@@ -86,7 +103,8 @@ function pageStart($title) {
         'Turmas' => 'pagina-recursos pagina-turmas',
         'Matrículas' => 'pagina-recursos pagina-matriculas',
         'Aulas e chamada' => 'pagina-recursos pagina-aulas',
-        'Usuários' => 'pagina-recursos pagina-usuarios'
+        'Usuários' => 'pagina-recursos pagina-usuarios',
+        'Professores' => 'pagina-recursos pagina-usuarios'
     ];
     $classePagina = isset($paginas[$title]) ? ' ' . $paginas[$title] : '';
     if ($title === 'Meus filhos') $classePagina .= ' pagina-familia';
@@ -94,20 +112,22 @@ function pageStart($title) {
     $totalNaoLidas = notificacoesNaoLidas(getDB(), currentEscolinhaId(), (int) $_SESSION['user_id']);
     $acoesRapidas = [
         'Responsáveis' => [['Novo responsável', '♧', 'responsaveis.php?mini=1']],
-        'Turmas' => [['Nova turma', '⚽', 'turmas.php?mini=1']],
+        'Turmas' => [['Nova turma', '', 'turmas.php?mini=1']],
         'Matrículas' => [['Nova matrícula', '↔', 'matriculas.php?mini=1']],
         'Aulas e chamada' => [
             ['Nova aula', '▣', 'aulas.php?mini=1'],
             ['Fazer chamada', '✓', 'aulas.php?mini=1&chamadas=1']
         ],
-        'Usuários' => [['Novo usuário', '☻', 'usuarios.php?mini=1']]
+        'Usuários' => [['Novo usuário', '☻', 'usuarios.php?mini=1']],
+        'Professores' => [['Novo professor', '☻', 'usuarios.php?secao=professores&mini=1']]
     ];
     $titulosRecursos = [
         'Responsáveis' => 'Responsáveis cadastrados',
         'Turmas' => 'Turmas cadastradas',
         'Matrículas' => 'Matrículas registradas',
         'Aulas e chamada' => 'Aulas registradas',
-        'Usuários' => 'Usuários cadastrados'
+        'Usuários' => 'Usuários cadastrados',
+        'Professores' => 'Professores cadastrados'
     ];
     ?>
 <!DOCTYPE html>
@@ -116,6 +136,7 @@ function pageStart($title) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($title) ?> - GestorFC</title>
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
     <?php if ($title !== 'Meus filhos'): ?><link rel="stylesheet" href="assets/css/tailwind.css"><?php endif; ?>
     <link rel="stylesheet" href="assets/css/style.css">
     <script defer src="assets/js/gestorfc.js"></script>
@@ -135,10 +156,10 @@ function pageStart($title) {
     <div class="estrutura-sistema mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[248px_minmax(0,1fr)]">
         <button type="button" class="fundo-menu-mobile" id="fundoMenuMobile" aria-label="Fechar menu"></button>
         <aside class="menu-lateral rounded-xl bg-slate-900 p-3 shadow-sm" id="menuLateral" aria-label="Navegação principal">
-            <a class="marca-sidebar" href="index.php" aria-label="GestorFC, ir para o dashboard"><span class="logo-bola" aria-hidden="true">⚽</span><span><strong>Gestor<span>FC</span></strong><small>Escolinha de futebol</small></span></a>
+            <a class="marca-sidebar" href="index.php" aria-label="GestorFC, ir para o dashboard"><strong class="logo-gfc">GFC</strong></a>
             <nav class="navegacao-sidebar" aria-label="Menu principal">
                 <p class="titulo-grupo-menu">PRINCIPAL</p>
-                <?php menuItem('index.php', 'Dashboard', 'dashboard', ['ADMIN', 'SECRETARIA', 'PROFESSOR'], ['dashboard.php']); ?>
+                <?php menuItem('index.php', 'Painel', 'dashboard', ['ADMIN', 'SECRETARIA', 'PROFESSOR'], ['dashboard.php']); ?>
                 <?php menuItem('meus_alunos.php', 'Meu Perfil', 'profile', ['ALUNO'], ['meus_alunos.php']); ?>
                 <?php menuItem('aulas.php', 'Treinos', 'training', ['ADMIN', 'PROFESSOR', 'SECRETARIA']); ?>
                 <?php menuItem('jogos.php', 'Jogos', 'game', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'ALUNO'], ['jogos.php']); ?>
@@ -148,7 +169,6 @@ function pageStart($title) {
                 <?php menuItem('aulas.php?secao=presenca', 'Presença', 'presence', ['ADMIN', 'PROFESSOR'], [], null, 'presenca'); ?>
                 <?php menuItem('metas.php', 'Metas', 'goal', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'ALUNO'], ['metas.php']); ?>
                 <?php menuItem('camisas.php', 'Camisas', 'shirt', ['ADMIN', 'SECRETARIA'], ['camisas.php']); ?>
-                <?php menuItem('financeiro.php', 'Financeiro', 'growth', ['ADMIN', 'SECRETARIA'], ['financeiro.php']); ?>
                 <?php menuItem('notificacoes.php', 'Notificações', 'bell', ['ADMIN', 'SECRETARIA', 'PROFESSOR', 'RESPONSAVEL', 'ALUNO'], ['notificacoes.php'], $totalNaoLidas > 0 ? $totalNaoLidas : null); ?>
 
                 <?php if (hasRole(['ADMIN', 'SECRETARIA'])): ?>
@@ -158,9 +178,9 @@ function pageStart($title) {
                     <?php menuItem('alunos.php', 'Alunos', 'students', ['ADMIN', 'SECRETARIA'], ['alunos.php']); ?>
                     <?php menuItem('responsaveis.php', 'Responsáveis', 'users', ['ADMIN', 'SECRETARIA'], ['responsaveis.php']); ?>
                     <?php menuItem('turmas.php', 'Turmas', 'teams', ['ADMIN', 'SECRETARIA'], ['turmas.php']); ?>
-                    <?php menuItem('matriculas.php', 'Matrículas', 'enrollments', ['ADMIN', 'SECRETARIA'], ['matriculas.php']); ?>
                 <?php endif; ?>
-                <?php menuItem('usuarios.php', 'Usuários', 'settings', ['ADMIN'], ['usuarios.php']); ?>
+                <?php menuItem('usuarios.php?secao=professores', 'Professores', 'settings', ['ADMIN'], [], null, 'professores'); ?>
+                <?php menuItem('usuarios.php', 'Usuários', 'settings', ['ADMIN']); ?>
                 <?php menuItem('area_responsavel.php', 'Meus filhos', 'students', ['RESPONSAVEL'], ['area_responsavel.php']); ?>
             </nav>
             <form class="rodape-sidebar" method="post" action="logout.php">
@@ -174,14 +194,14 @@ function pageStart($title) {
             <?php showFlash(); ?>
             <?php if (isset($acoesRapidas[$title])): ?>
                 <div class="barra-recursos">
-                    <div><h2><?= e($titulosRecursos[$title]) ?></h2><p>Escolha uma ação para abrir o formulário em uma janela.</p></div>
+                    <div><h2><?= e($titulosRecursos[$title]) ?></h2></div>
                     <div class="botoes-recursos">
                         <?php foreach ($acoesRapidas[$title] as $acao): ?>
-                            <button type="button" class="acao-rapida" data-modal-url="<?= e($acao[2]) ?>" data-modal-titulo="<?= e($acao[0]) ?>"><span><?= e($acao[1]) ?></span><?= e($acao[0]) ?></button>
+                            <button type="button" class="acao-rapida" data-modal-url="<?= e($acao[2]) ?>" data-modal-titulo="<?= e($acao[0]) ?>"><?php if ($acao[1] !== ''): ?><span><?= e($acao[1]) ?></span><?php endif; ?><?= e($acao[0]) ?></button>
                         <?php endforeach; ?>
                     </div>
                 </div>
-                <dialog class="modal-cadastro" id="modalRecurso" aria-labelledby="tituloModalRecurso">
+                <dialog class="modal-cadastro" id="modalRecurso" aria-labelledby="tituloModalRecurso"<?= $title === 'Professores' ? ' data-modal-professores' : '' ?>>
                     <header class="modal-cabecalho"><h2 id="tituloModalRecurso"><?= e($title) ?></h2><button type="button" class="fechar-modal" id="fecharModalRecurso" aria-label="Fechar">×</button></header>
                     <iframe id="iframeRecurso" title="Formulário"></iframe>
                 </dialog>
@@ -208,6 +228,20 @@ function pageStart($title) {
                     modalRecurso.addEventListener('close', function () {
                         iframeRecurso.src = 'about:blank';
                     });
+                    window.addEventListener('message', function (evento) {
+                        if (evento.origin !== window.location.origin || evento.source !== iframeRecurso.contentWindow
+                            || evento.data !== 'gestorfc:cadastro-salvo') return;
+                        modalRecurso.close();
+                        window.location.reload();
+                    });
+                    <?php if ($title === 'Professores'): ?>
+                    window.addEventListener('message', function (evento) {
+                        if (evento.origin !== window.location.origin || evento.source !== iframeRecurso.contentWindow
+                            || evento.data !== 'gestorfc:professor-salvo') return;
+                        modalRecurso.close();
+                        window.location.reload();
+                    });
+                    <?php endif; ?>
                 </script>
             <?php endif; ?>
     <?php

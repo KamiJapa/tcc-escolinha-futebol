@@ -1,4 +1,5 @@
 <?php
+// Encaminha o usuário para a página inicial.
 require_once __DIR__ . '/includes/auth.php';
 
 if (isset($_SESSION['user_id'])) {

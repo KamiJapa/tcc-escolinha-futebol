@@ -5,8 +5,8 @@ if (PHP_SAPI !== 'cli') {
 }
 
 $dsn = getenv('TEST_DB_DSN') ?: '';
-if (!preg_match('/^mysql:host=127\.0\.0\.1;port=(\d+);dbname=gestorfc_codex_test_[a-z0-9_]+(?:;charset=utf8mb4)?$/D', $dsn)) {
-    fwrite(STDERR, "Defina TEST_DB_DSN para um banco descartável gestorfc_codex_test_* em 127.0.0.1.\n");
+if (!preg_match('/^mysql:host=127\.0\.0\.1;port=(\d+);dbname=gestorfc_test_[a-z0-9_]+(?:;charset=utf8mb4)?$/D', $dsn)) {
+    fwrite(STDERR, "Defina TEST_DB_DSN para um banco descartável gestorfc_test_* em 127.0.0.1.\n");
     exit(1);
 }
 
