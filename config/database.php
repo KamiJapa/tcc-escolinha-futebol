@@ -10,7 +10,7 @@ function getDB() {
     if ($db instanceof PDO) return $db;
 
     $host = dbSetting('DB_HOST', '127.0.0.1');
-    $port = dbSetting('DB_PORT', '3308');
+    $port = dbSetting('DB_PORT', '3306');
     $name = dbSetting('DB_NAME', 'bdescolinha');
     try {
         $db = new PDO("mysql:host=$host;port=$port;dbname=$name;charset=utf8mb4",
