@@ -275,7 +275,10 @@ INSERT INTO TB_ALUNO (COD_ALUNO, COD_ESCOLINHA, COD_RESPONSAVEL, NOME, DATA_NASC
 (3, 1, 2, 'Enzo Gabriel Mendes', '2014-02-18', 'Goleiro', 1, 'ATIVO', '2024-02-05'),
 (4, 1, 3, 'Matheus Antunes', '2010-11-03', 'Zagueiro', 4, 'ATIVO', '2023-08-15'),
 (5, 1, 2, 'Bernardo Mendes', '2017-06-30', 'Lateral Direito', 2, 'ATIVO', '2024-03-01'),
-(6, 1, 3, 'Felipe Antunes', '2011-09-12', 'Volante', 5, 'ATIVO', '2023-08-15');
+(6, 1, 3, 'Felipe Antunes', '2011-09-12', 'Volante', 5, 'ATIVO', '2023-08-15'),
+(7, 1, 1, 'Rafael Oliveira (Demonstração)', '2017-03-12', 'Atacante', 11, 'ATIVO', CURDATE()),
+(8, 1, 2, 'Bruno Mendes (Demonstração)', '2015-06-20', 'Meio-Campo', 12, 'ATIVO', CURDATE()),
+(9, 1, 3, 'Pedro Antunes (Demonstração)', '2012-09-08', 'Zagueiro', 13, 'ATIVO', CURDATE());
 
 INSERT INTO TB_MATRICULA (COD_MATRICULA, COD_ALUNO, COD_TURMA, DATA_MATRICULA, STATUS) VALUES
 (1, 1, 1, '2024-01-10', 'ATIVA'),
@@ -283,7 +286,10 @@ INSERT INTO TB_MATRICULA (COD_MATRICULA, COD_ALUNO, COD_TURMA, DATA_MATRICULA, S
 (3, 3, 2, '2024-02-05', 'ATIVA'),
 (4, 4, 3, '2023-08-15', 'ATIVA'),
 (5, 5, 1, '2024-03-01', 'ATIVA'),
-(6, 6, 3, '2023-08-15', 'ATIVA');
+(6, 6, 3, '2023-08-15', 'ATIVA'),
+(7, 7, 1, CURDATE(), 'ATIVA'),
+(8, 8, 2, CURDATE(), 'ATIVA'),
+(9, 9, 3, CURDATE(), 'ATIVA');
 
 INSERT INTO TB_AULA (COD_AULA, COD_TURMA, DATA_AULA, TEMA_TREINO, OBSERVACAO) VALUES
 (1, 1, CURDATE() - INTERVAL 4 DAY, 'Domínio de bola e condução', 'Treino técnico com foco em coordenação motora'),
@@ -305,5 +311,14 @@ INSERT INTO TB_AVALIACAO (COD_AVALIACAO, COD_ALUNO, COD_PROFESSOR, DATA_AVALIACA
 (1, 1, 3, CURDATE() - INTERVAL 10 DAY, '{"passe": 8.5, "finalizacao": 9.0, "posicionamento": 8.0, "fisico": 7.5, "disciplina": 9.5}', 8.5, 'Excelente evolução na finalização e ótimo comportamento em equipe.'),
 (2, 2, 3, CURDATE() - INTERVAL 10 DAY, '{"passe": 9.0, "finalizacao": 8.0, "posicionamento": 9.5, "fisico": 8.5, "disciplina": 9.0}', 8.8, 'Ótima visão de jogo, atua muito bem na distribuição de jogadas no meio-campo.'),
 (3, 4, 3, CURDATE() - INTERVAL 15 DAY, '{"passe": 7.5, "finalizacao": 6.5, "posicionamento": 9.0, "fisico": 9.0, "disciplina": 8.0}', 8.0, 'Excelente porte físico e marcação individual sólida.');
+
+
+-- Mensalidades fictícias: duas pendentes para demonstrar a baixa manual e uma já paga.
+-- A competência e o vencimento acompanham o mês da importação.
+INSERT INTO TB_FINANCEIRO
+(COD_ESCOLINHA, COD_ALUNO, TIPO, CATEGORIA, DESCRICAO, COMPETENCIA, VALOR, VENCIMENTO, DATA_PAGAMENTO, STATUS) VALUES
+(1, 7, 'RECEITA', 'MENSALIDADE', 'Mensalidade de Rafael Oliveira (demonstração)', DATE_FORMAT(CURDATE(), '%Y-%m-01'), 150.00, LAST_DAY(CURDATE()), NULL, 'PENDENTE'),
+(1, 8, 'RECEITA', 'MENSALIDADE', 'Mensalidade de Bruno Mendes (demonstração)', DATE_FORMAT(CURDATE(), '%Y-%m-01'), 150.00, LAST_DAY(CURDATE()), NULL, 'PENDENTE'),
+(1, 9, 'RECEITA', 'MENSALIDADE', 'Mensalidade de Pedro Antunes (demonstração)', DATE_FORMAT(CURDATE(), '%Y-%m-01'), 150.00, LAST_DAY(CURDATE()), CURDATE(), 'PAGO');
 
 SET FOREIGN_KEY_CHECKS = 1;
