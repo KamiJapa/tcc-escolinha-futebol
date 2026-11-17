@@ -6,13 +6,13 @@ Sistema escolar para organizar alunos, responsáveis, turmas, matrículas e pres
 
 1. Inicie o Apache e o MySQL pelo painel do XAMPP.
 2. Abra o phpMyAdmin e importe `database.sql` para criar o banco e os dados de demonstração. **Atenção:** esse arquivo apaga e recria as tabelas deste sistema. Não o importe sobre dados que queira guardar.
-3. Use MariaDB em 127.0.0.1:3308 com o banco bdescolinha. Confira a porta no painel do XAMPP.
+3. Use MariaDB em 127.0.0.1:3306 com o banco bdescolinha. Confira a porta no painel do XAMPP.
 4. Abra `http://localhost/tcc/login.php`.
 
 ### Configuração do ambiente
 
 O PHP lê `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` e `DB_PASS` do ambiente.
-Os padrões para o XAMPP local são 127.0.0.1, 3308, bdescolinha, root e senha vazia.
+Os padrões para o XAMPP local são 127.0.0.1, 3306, bdescolinha, root e senha vazia.
 Consulte `.env.example` para os nomes das variáveis. Defina-as no terminal antes de
 iniciar o servidor PHP ou use `SetEnv` na configuração local do Apache e reinicie o
 Apache. O projeto lê o ambiente do processo.
