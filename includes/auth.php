@@ -22,14 +22,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if (isset($_SESSION['user_id'])) {
-    $now = time();
-    if ($now - ($_SESSION['last_activity'] ?? $now) >= SESSION_IDLE_TIMEOUT) {
-        logoutUser(true);
-    }
-    $_SESSION['last_activity'] = $now;
-}
-
 /**
  * Ensure the user is logged in.
  * Redirects to login page if not authenticated.
@@ -39,6 +31,21 @@ function checkLogin() {
         header("Location: login.php");
         exit;
     }
+    $now = time();
+    if (isset($_SESSION['last_activity']) && $now - (int) $_SESSION['last_activity'] > SESSION_IDLE_TIMEOUT) {
+        destroyUserSession();
+
+        // Use a new anonymous session to carry the one-time message.
+        unset($_COOKIE[session_name()]);
+        session_id('');
+        session_start();
+        require_once __DIR__ . '/helpers.php';
+        flash('error', 'Sua sessão expirou por inatividade. Faça login novamente.');
+        header('Location: login.php');
+        exit;
+    }
+    $_SESSION['last_activity'] = $now;
+
     require_once __DIR__ . '/../config/database.php';
     $q = getDB()->prepare('SELECT PERFIL FROM TB_USUARIO WHERE COD_USUARIO = ? AND COD_ESCOLINHA = ? AND ATIVO = 1');
     $q->execute([$_SESSION['user_id'], $_SESSION['escolinha_id'] ?? 0]);
@@ -88,7 +95,7 @@ function loginUser($email, $password) {
     $key = hash('sha256', $email . "\0" . $origin, true);
     $db = getDB();
     if (random_int(1, 50) === 1) {
-        pruneExpiredLoginAttempts($db);
+        purgeExpiredLoginAttempts($db);
     }
     try {
         $db->beginTransaction();
@@ -137,11 +144,12 @@ function loginUser($email, $password) {
     return true;
 }
 
-function pruneExpiredLoginAttempts(PDO $db) {
+function purgeExpiredLoginAttempts(PDO $db): void {
     try {
-        // A limpeza usa o índice de expiração e cede se outra requisição detiver um bloqueio.
+        // EXPIRA_EM é a hora da última falha mais 15 minutos. Use o índice sem esperar por bloqueios.
         $db->exec('SET STATEMENT innodb_lock_wait_timeout = 0 FOR
-                   DELETE FROM TB_LOGIN_TENTATIVA WHERE EXPIRA_EM <= UTC_TIMESTAMP()
+                   DELETE FROM TB_LOGIN_TENTATIVA
+                   WHERE EXPIRA_EM < UTC_TIMESTAMP() - INTERVAL 1 DAY + INTERVAL 15 MINUTE
                    ORDER BY EXPIRA_EM LIMIT 100');
     } catch (PDOException $error) {
         error_log('GestorFC: limpeza de tentativas de login adiada.');
@@ -151,7 +159,7 @@ function pruneExpiredLoginAttempts(PDO $db) {
 /**
  * Log out the current user and destroy the session.
  */
-function logoutUser($expired = false) {
+function destroyUserSession() {
     session_unset();
     session_destroy();
     
@@ -162,7 +170,10 @@ function logoutUser($expired = false) {
         $params['expires'] = time() - 42000;
         setcookie(session_name(), '', $params);
     }
-    
-    header('Location: ' . ($expired ? 'login.php?expirada=1' : 'login.php'));
+}
+
+function logoutUser() {
+    destroyUserSession();
+    header('Location: login.php');
     exit;
 }

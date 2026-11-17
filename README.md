@@ -19,7 +19,7 @@ Apache. O projeto lê o ambiente do processo.
 
 ## Contas de demonstração
 
-Em uma instalação local com os dados de exemplo, defina `GESTORFC_DEMO_MODE=1` no
+Em uma instalação local com os dados de exemplo, defina `APP_DEMO_ACCOUNTS=true` no
 ambiente do servidor para exibir os botões que preenchem as credenciais na tela de
 login. A tela oculta os botões e as credenciais por padrão. Em instalações
 públicas, mantenha o modo desligado e use um banco sem contas de demonstração.
@@ -58,8 +58,9 @@ Os registros atuais são preservados.
 - Três falhas de login, cada uma a menos de 15 minutos da anterior, bloqueiam
   novas tentativas por 15 minutos. O contador usa e-mail normalizado e o IP da
   conexão. Um login bem-sucedido reinicia a contagem. No MariaDB, a aplicação
-  limpa até 100 registros vencidos em cerca de uma a cada 50 tentativas de login
-  com e-mail válido, sem esperar por bloqueios de linhas.
+  limpa até 100 registros cuja última falha ocorreu há mais de 24 horas. Isso
+  ocorre em cerca de uma a cada 50 tentativas com e-mail válido, sem esperar por
+  bloqueios de linhas.
 - A sessão autenticada expira após 30 minutos de inatividade. Se houver outras
   aplicações PHP no mesmo servidor, configure um diretório de sessões próprio
   para o GestorFC para evitar coleta antecipada por outra aplicação.
@@ -70,6 +71,29 @@ Os registros atuais são preservados.
   notificações mantém a lista completa.
 - O CSP permite recursos locais e vincula scripts inline ao nonce da resposta.
   Gráficos, confirmações e trocas de filtro usam JavaScript local.
+
+### Testes da autenticação
+
+Use um servidor de teste em `http://127.0.0.1:PORTA` com banco e diretório de
+sessões descartáveis. Importe `database.sql` somente no banco de teste e defina
+`TEST_BASE_URL` para o servidor com `APP_DEMO_ACCOUNTS` ausente.
+`TEST_SESSION_DIR` deve apontar para o diretório de sessões do servidor
+(handler padrão de arquivos do PHP). Os testes usam o administrador da carga
+de demonstração. Para o teste do modo demo, forneça duas URLs locais em
+`TEST_DEMO_FALSE_URL` e `TEST_DEMO_TRUE_URL`, com `APP_DEMO_ACCOUNTS=false` e
+`APP_DEMO_ACCOUNTS=true`, respectivamente.
+
+```text
+php tests/test_session_timeout.php
+php tests/test_logout_csrf.php
+php tests/test_demo_accounts_toggle.php
+php tests/test_rate_limit_purge.php
+```
+
+Para o teste da limpeza, configure `TEST_DB_DSN` no formato
+`mysql:host=127.0.0.1;port=33367;dbname=gestorfc_codex_test_exemplo;charset=utf8mb4`,
+com o esquema carregado nesse banco descartável. Use `TEST_DB_USER` e
+`TEST_DB_PASS` conforme a instância de teste.
 
 ## Como o cadastro funciona
 
