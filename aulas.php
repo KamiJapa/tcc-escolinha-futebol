@@ -259,28 +259,11 @@ pageStart('Aulas e chamada');
     </div>
 </section>
 
-<?php if (!isset($_GET['mini'])): ?>
-    <dialog class="modal-cadastro" id="modalAulas" aria-labelledby="tituloModalAulas"><header class="modal-cabecalho"><h2 id="tituloModalAulas">Treinos</h2><button type="button" class="fechar-modal" id="fecharModalAulas" aria-label="Fechar">×</button></header><iframe id="iframeAulas" title="Chamada ou edição do treino"></iframe></dialog>
-    <script nonce="<?= cspNonce() ?>">
-        const tipoTreino = document.getElementById('tipoTreino');
-        const atributosPersonalizados = document.getElementById('atributosPersonalizados');
-        if (tipoTreino && atributosPersonalizados) {
-            tipoTreino.addEventListener('change', function () {
-                atributosPersonalizados.hidden = tipoTreino.value !== 'PERSONALIZADO';
-            });
-        }
-        const modalAulas = document.getElementById('modalAulas');
-        const iframeAulas = document.getElementById('iframeAulas');
-        const tituloModalAulas = document.getElementById('tituloModalAulas');
-        document.addEventListener('click', function (evento) {
-            const botao = evento.target.closest('[data-modal-url]');
-            if (!botao) return;
-            iframeAulas.src = botao.dataset.modalUrl;
-            tituloModalAulas.textContent = botao.dataset.modalTitulo;
-            modalAulas.showModal();
-        });
-        document.getElementById('fecharModalAulas').addEventListener('click', function () { modalAulas.close(); });
-        modalAulas.addEventListener('close', function () { iframeAulas.src = 'about:blank'; });
-    </script>
-<?php endif; ?>
+<script nonce="<?= cspNonce() ?>">
+    const tipoTreino = document.getElementById('tipoTreino');
+    const atributosPersonalizados = document.getElementById('atributosPersonalizados');
+    tipoTreino.addEventListener('change', function () {
+        atributosPersonalizados.hidden = tipoTreino.value !== 'PERSONALIZADO';
+    });
+</script>
 <?php pageEnd(); ?>
