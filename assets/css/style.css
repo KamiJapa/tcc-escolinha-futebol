@@ -221,7 +221,7 @@ button { cursor: pointer; }
 .menu-indisponivel:hover { color: #75849a; background: transparent; transform: none; }
 .badge-notificacoes { display: grid; min-width: 20px; height: 20px; place-items: center; padding: 0 5px; color: #a8b6c9; background: #1d2b3e; border: 1px solid var(--line); border-radius: 999px; font-size: .68rem; font-weight: 750; }
 .rodape-sidebar { padding: 9px 2px 0; border-top: 1px solid var(--line); }
-.link-menu.link-sair { margin: 0; color: #9eacbf; }
+.link-menu.link-sair { width: 100%; margin: 0; border: 0; background: transparent; color: #9eacbf; text-align: left; cursor: pointer; }
 .link-menu.link-sair:hover { color: #fda4af; background: rgb(244 63 94 / 8%); }
 .botao-menu-mobile, .fundo-menu-mobile { display: none; }
 

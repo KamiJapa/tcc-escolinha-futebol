@@ -1,6 +1,8 @@
 <?php
 // includes/auth.php
 
+const SESSION_IDLE_TIMEOUT = 30 * 60;
+
 function cspNonce() {
     static $nonce = null;
     return $nonce ??= base64_encode(random_bytes(18));
@@ -14,8 +16,18 @@ if (PHP_SAPI !== 'cli') {
 if (session_status() === PHP_SESSION_NONE) {
     $https = in_array(strtolower($_SERVER['HTTPS'] ?? ''), ['on', '1'], true);
     ini_set('session.use_strict_mode', '1');
+    // Permite que a aplicação reconheça a expiração antes da coleta do PHP.
+    ini_set('session.gc_maxlifetime', (string) max(2 * SESSION_IDLE_TIMEOUT, (int) ini_get('session.gc_maxlifetime')));
     session_set_cookie_params(['secure' => $https, 'httponly' => true, 'samesite' => 'Lax']);
     session_start();
+}
+
+if (isset($_SESSION['user_id'])) {
+    $now = time();
+    if ($now - ($_SESSION['last_activity'] ?? $now) >= SESSION_IDLE_TIMEOUT) {
+        logoutUser(true);
+    }
+    $_SESSION['last_activity'] = $now;
 }
 
 /**
@@ -75,6 +87,9 @@ function loginUser($email, $password) {
     $origin = filter_var($remote, FILTER_VALIDATE_IP) ? inet_pton($remote) : '';
     $key = hash('sha256', $email . "\0" . $origin, true);
     $db = getDB();
+    if (random_int(1, 50) === 1) {
+        pruneExpiredLoginAttempts($db);
+    }
     try {
         $db->beginTransaction();
         $db->prepare('INSERT INTO TB_LOGIN_TENTATIVA (CHAVE, EXPIRA_EM) VALUES (?, UTC_TIMESTAMP())
@@ -118,13 +133,25 @@ function loginUser($email, $password) {
     $_SESSION['user_email'] = $user['EMAIL'];
     $_SESSION['user_role'] = $user['PERFIL'];
     $_SESSION['escolinha_id'] = $user['COD_ESCOLINHA'];
+    $_SESSION['last_activity'] = time();
     return true;
+}
+
+function pruneExpiredLoginAttempts(PDO $db) {
+    try {
+        // A limpeza usa o índice de expiração e cede se outra requisição detiver um bloqueio.
+        $db->exec('SET STATEMENT innodb_lock_wait_timeout = 0 FOR
+                   DELETE FROM TB_LOGIN_TENTATIVA WHERE EXPIRA_EM <= UTC_TIMESTAMP()
+                   ORDER BY EXPIRA_EM LIMIT 100');
+    } catch (PDOException $error) {
+        error_log('GestorFC: limpeza de tentativas de login adiada.');
+    }
 }
 
 /**
  * Log out the current user and destroy the session.
  */
-function logoutUser() {
+function logoutUser($expired = false) {
     session_unset();
     session_destroy();
     
@@ -136,6 +163,6 @@ function logoutUser() {
         setcookie(session_name(), '', $params);
     }
     
-    header("Location: login.php");
+    header('Location: ' . ($expired ? 'login.php?expirada=1' : 'login.php'));
     exit;
 }

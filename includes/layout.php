@@ -163,7 +163,10 @@ function pageStart($title) {
                 <?php menuItem('usuarios.php', 'Usuários', 'settings', ['ADMIN'], ['usuarios.php']); ?>
                 <?php menuItem('area_responsavel.php', 'Meus filhos', 'students', ['RESPONSAVEL'], ['area_responsavel.php']); ?>
             </nav>
-            <div class="rodape-sidebar"><a class="link-menu link-sair" href="logout.php"><svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg><span class="texto-menu">Sair</span></a></div>
+            <form class="rodape-sidebar" method="post" action="logout.php">
+                <input type="hidden" name="csrf_token" value="<?= e(csrfToken()) ?>">
+                <button class="link-menu link-sair" type="submit"><svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg><span class="texto-menu">Sair</span></button>
+            </form>
         </aside>
 
         <main class="conteudo-sistema min-w-0">

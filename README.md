@@ -19,6 +19,11 @@ Apache. O projeto lê o ambiente do processo.
 
 ## Contas de demonstração
 
+Em uma instalação local com os dados de exemplo, defina `GESTORFC_DEMO_MODE=1` no
+ambiente do servidor para exibir os botões que preenchem as credenciais na tela de
+login. A tela oculta os botões e as credenciais por padrão. Em instalações
+públicas, mantenha o modo desligado e use um banco sem contas de demonstração.
+
 Todas usam a senha `123456`:
 
 - Administrador: `admin@teste.com`
@@ -52,8 +57,13 @@ Os registros atuais são preservados.
 
 - Três falhas de login, cada uma a menos de 15 minutos da anterior, bloqueiam
   novas tentativas por 15 minutos. O contador usa e-mail normalizado e o IP da
-  conexão. Um login bem-sucedido reinicia a contagem. As linhas vencidas podem
-  ser limpas com `DELETE FROM TB_LOGIN_TENTATIVA WHERE EXPIRA_EM <= UTC_TIMESTAMP()`.
+  conexão. Um login bem-sucedido reinicia a contagem. No MariaDB, a aplicação
+  limpa até 100 registros vencidos em cerca de uma a cada 50 tentativas de login
+  com e-mail válido, sem esperar por bloqueios de linhas.
+- A sessão autenticada expira após 30 minutos de inatividade. Se houver outras
+  aplicações PHP no mesmo servidor, configure um diretório de sessões próprio
+  para o GestorFC para evitar coleta antecipada por outra aplicação.
+- O botão **Sair** envia um formulário POST protegido por token CSRF.
 - Número de camisa opcional de 0 a 99, exclusivo entre alunos ativos da mesma
   escolinha. Inativar libera o número. Reativar exige número disponível.
 - A área do responsável mostra os quatro avisos mais recentes. A página de
@@ -70,7 +80,6 @@ Os registros atuais são preservados.
 - No painel, os cartões mostram contagens calculadas no banco. Cada tipo de usuário vê apenas os dados permitidos para seu perfil.
 - Os botões **Ações rápidas** abrem uma janela com o formulário que já existe em cada tela. O `iframe` do JavaScript mostra essa página sem o menu lateral, e o PHP continua usando os mesmos formulários e validações.
 - `includes/layout.php` verifica `?mini=1` para desenhar a página compacta. `includes/helpers.php`, na função `go`, mantém esse parâmetro depois de salvar ou mostrar um erro.
-- Em `login.php`, os botões de teste chamam `usarConta(email)`. Essa função preenche os dois campos com a conta escolhida e a senha de demonstração.
 - Em `alunos.php`, antes de inserir ou alterar, a consulta `SELECT` verifica se o responsável já tem um aluno com o mesmo nome e a mesma data de nascimento. `TRIM` remove espaços nas pontas e `LOWER` ignora diferenças entre maiúsculas e minúsculas.
 - Para alterar camisas, use **Camisas dos alunos**. `camisas.php` lista o elenco, impede atribuir um número já ocupado e troca os números em uma transação. Assim, se uma das duas alterações falhar, o banco desfaz a troca inteira.
 - A chamada pode ser aberta a partir do botão do painel; depois de escolher uma aula, marque as presenças e salve. A gravação atualiza a presença existente ou insere uma nova para aquela aula e aluno.

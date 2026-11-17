@@ -37,6 +37,16 @@ for page in ['calendario.php?mes%5B%5D=x&tipo%5B%5D=x&turma%5B%5D=x','notificaco
 # CSRF vazio e adulterado.
 ok(Client().req('login.php',{'email':'admin@teste.com','senha':'123456'})[0]==400,'CSRF ausente rejeitado mesmo em sessão nova')
 ok(admin.req('alunos.php',{'action':'delete','id':'1','csrf_token':'invalid'})[0]==400,'CSRF inválido não exclui aluno')
+logout_client = Client().login('admin@teste.com')
+ok(logout_client.req('logout.php')[0] == 405, 'Logout por GET rejeitado')
+ok(logout_client.req('logout.php', {})[0] == 400, 'Logout sem CSRF rejeitado')
+ok(logout_client.req('logout.php', {'csrf_token': 'invalid'})[0] == 400, 'Logout com CSRF inválido rejeitado')
+code, body = logout_client.req('dashboard.php')
+logout_form = re.search(r'<form [^>]*method="post" action="logout.php">\s*<input [^>]*name="csrf_token" value="([^"]+)"', body)
+ok(code == 200 and logout_form, 'Sessão preservada e formulário de saída disponível')
+code, body = logout_client.req('logout.php', {'csrf_token': logout_form[1]})
+ok(code == 200 and 'name="senha"' in body, 'Logout com CSRF válido retorna ao login')
+ok('name="senha"' in logout_client.req('dashboard.php')[1], 'Logout encerra acesso à área autenticada')
 # Matrícula e validação do servidor.
 code,body=admin.post('matriculas.php',{'action':'create','cod_aluno':1,'cod_turma':2,'data_matricula':'2026-02-30','status':'ATIVA'})
 ok('Dados da matrícula inválidos' in body,'Data impossível rejeitada')

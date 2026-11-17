@@ -7,6 +7,7 @@ if (isset($_SESSION['user_id'])) {
     exit;
 }
 
+$demo = getenv('GESTORFC_DEMO_MODE') === '1';
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     checkCsrf();
@@ -38,6 +39,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <main class="login-caixa w-full max-w-md rounded-2xl border border-slate-700 bg-slate-800 p-8 shadow-2xl">
         <?php showFlash(); ?>
+        <?php if (($_GET['expirada'] ?? '') === '1'): ?>
+            <p class="mensagem erro">Sua sessão expirou por inatividade. Entre novamente.</p>
+        <?php endif; ?>
         <?php if ($erro !== ''): ?><p class="mensagem-erro"><?= e($erro) ?></p><?php endif; ?>
 
         <form class="space-y-4" method="post" action="login.php">
@@ -56,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <p class="login-cadastro-link mt-5 text-center text-sm text-slate-300">Ainda não tem uma conta? <a class="font-semibold text-emerald-400 hover:text-emerald-300" href="cadastro.php">Cadastre-se</a></p>
 
+        <?php if ($demo): ?>
         <section class="login-testes mt-6 border-t border-slate-700 pt-4 text-sm text-slate-300">
             <h2 class="font-bold text-white">Contas para teste</h2>
             <p>Senha das contas: <strong class="text-amber-300">123456</strong></p>
@@ -66,22 +71,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button class="conta-teste" type="button" data-conta="responsavel@teste.com"><strong>Responsável</strong><span>responsavel@teste.com</span></button>
             </div>
         </section>
+        <?php endif; ?>
     </main>
 
     <script nonce="<?= cspNonce() ?>">
         document.getElementById("alternarSenha").addEventListener("click", mostrarSenha);
+        <?php if ($demo): ?>
         document.querySelectorAll("[data-conta]").forEach(button => {
             button.addEventListener("click", () => usarConta(button.dataset.conta));
         });
+        <?php endif; ?>
         function mostrarSenha() {
             const campo = document.getElementById('senha');
             campo.type = campo.type === 'password' ? 'text' : 'password';
         }
 
+        <?php if ($demo): ?>
         function usarConta(email) {
             document.getElementById('email').value = email;
             document.getElementById('senha').value = '123456';
         }
+        <?php endif; ?>
     </script>
 </body>
 </html>
